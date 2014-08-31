@@ -1,0 +1,40 @@
+import pytest
+
+@pytest.fixture(scope="session", autouse=True)
+def app(request):
+    print "setup session"
+
+    def teardown():
+        print "teardown session"
+    request.addfinalizer(teardown)
+    return None
+
+@pytest.fixture(scope="module", autouse=True)
+def module(request):
+    print "setup module"
+
+    def teardown():
+        print "\nteardown module"
+    request.addfinalizer(teardown)
+    return "test"
+
+def test_function(module):
+    print "test function"
+
+class TestClass:
+    @pytest.fixture(scope="class", autouse=True)
+    def klass_setup(self, request):
+        print "setup class"
+        request.addfinalizer(self.klass_teardown)
+
+    def klass_teardown(self):
+        print "teardown class"
+
+    @pytest.fixture(scope="class")
+    def klass_init(self):
+        print "another init process"
+
+    def test_method(self, klass_init):
+        print "test method"
+
+

@@ -1,0 +1,2 @@
+NAME="System ID"
+UUID=0x2A23

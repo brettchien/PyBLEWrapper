@@ -1,0 +1,2 @@
+NAME="New Alert"
+UUID=0x2A46

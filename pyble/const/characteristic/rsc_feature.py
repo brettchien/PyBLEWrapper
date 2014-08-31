@@ -1,0 +1,2 @@
+NAME="RSC Feature"
+UUID=0x2A54

@@ -1,0 +1,2 @@
+NAME="Time Zone"
+UUID=0x2A0E

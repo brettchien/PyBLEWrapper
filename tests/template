@@ -1,0 +1,39 @@
+import pytest
+
+from ble import backend
+
+def setup_module(module):
+    print "setup module"
+
+def teardown_module(module):
+    print "teardown module"
+
+def setup_function(function):
+    print "setup function"
+
+def teardown_function(function):
+    print "teardown function"
+
+def test_module_load():
+    print "test module load"
+    assert 0
+
+class TestBackend:
+    @classmethod
+    def setup_class(cls):
+        print "setup class"
+
+    @classmethod
+    def teardown_class(cls):
+        print "teardown class"
+
+    def setup_method(self, method):
+        print "setup function"
+
+    def teardown_method(self, method):
+        print "teardown function"
+
+    def test_load(self):
+        print "test load"
+        assert 0
+

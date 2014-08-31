@@ -1,0 +1,2 @@
+NAME="Link Loss"
+UUID=0x1803

@@ -1,0 +1,2 @@
+NAME="Glucose"
+UUID=0x1808

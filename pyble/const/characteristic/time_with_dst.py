@@ -1,0 +1,2 @@
+NAME="Time with DST"
+UUID=0x2A11

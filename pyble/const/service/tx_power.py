@@ -1,0 +1,2 @@
+NAME="Tx Power"
+UUID=0x1804

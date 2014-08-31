@@ -1,0 +1,2 @@
+NAME="PnP ID"
+UUID=0x2A50

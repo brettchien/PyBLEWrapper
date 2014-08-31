@@ -1,0 +1,2 @@
+NAME="CSC Feature"
+UUID=0x2A5C

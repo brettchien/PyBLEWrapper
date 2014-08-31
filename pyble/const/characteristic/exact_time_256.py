@@ -1,0 +1,2 @@
+NAME="Exact Time 256"
+UUID=0x2A0C

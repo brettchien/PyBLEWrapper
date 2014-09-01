@@ -12,8 +12,12 @@ logger = logging.getLogger(__name__)
 
 class OSXBLEService(Service):
     def __init__(self, peripheral, instance):
+        try:
+            super().__init__()
+        except:
+            super(OSXBLEService, self).__init__()
         self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
-        self._instance = instance
+        self.instance = instance
         self.name = "UNKNOWN"
         self.UUID = ""
         uuidBytes = instance._.UUID._.data
@@ -28,10 +32,14 @@ class OSXBLEService(Service):
             # invalid UUID size
             pass
         self.isPrimary = (instance._.isPrimary == YES)
-        self.characteristics = []
         self.includeServices = []
         # which peripheral own this service
         self.peripheral = peripheral
+
+    def __iter__(self):
+        if len(self.characteristics) == 0:
+            self.peripheral.discoverCharacteristicsForService(self.instance)
+        return iter(self.characteristics)
 
     def show(self):
         print self
@@ -59,14 +67,6 @@ class OSXBLEService(Service):
             if str(c.UUID) == CBUUID2String(instance._.UUID._.data):
                 return c
         return None
-
-    @property
-    def instance(self):
-        return self._instance
-
-    @instance.setter
-    def instance(self, value):
-        self._instance = value
 
     def __repr__(self):
         identifier = ""
@@ -102,7 +102,7 @@ class OSXBLECharacteristic(Characteristic):
 
         self._value = None
         self.descriptors = []
-        self.userdescription = ""
+        self._description = ""
         self.properties = {
             "broadcast": False,                 # 0x0001
             "read": False,                      # 0x0002
@@ -123,7 +123,7 @@ class OSXBLECharacteristic(Characteristic):
 
     # callbacks
     def _update_userdescription(self, description):
-        self.userdescription = description
+        self.description = description
 
     def _update_value(self, value):
         self.value = value
@@ -166,12 +166,20 @@ class OSXBLECharacteristic(Characteristic):
 
     @property
     def value(self):
+        if self._value == None:
+            self.service.peripheral.readValueForCharacteristic(self.instance)
         return self._value
 
     @value.setter
     def value(self, data):
         self._value = data
         # notify callback
+
+    @property
+    def description(self):
+        if self._description == None:
+            pass
+        return self._description
 
     def updateProperties(self, properties):
         for key in self.properties:

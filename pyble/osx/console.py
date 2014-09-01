@@ -88,6 +88,10 @@ class OSXCmd(cmd.Cmd, object):
         self.unregisterKeyboardInterrupt()
         del self.osx_pool
 
+    def endloop(self):
+        self.cmdqueue.put("exit")
+
+
     def precmd(self, line):
         self._history += [ line.strip() ]
         if len(self._history) > self.history_size:

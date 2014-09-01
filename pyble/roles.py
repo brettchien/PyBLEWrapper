@@ -9,33 +9,96 @@ class Peripheral(object):
         self.name = name
         self.UUID = uuid
         self.advertisementData = advertisementData
-        self.rssi = rssi
+        self._rssi = rssi
         self.address = address
         self.services = []
+        self._serviceUUIDs = []
         self.delegate = None
-        self.state = Peripheral.DISCONNECTED
+        self._state = Peripheral.DISCONNECTED
 
-    def setNotifyOnName(self, func):
-        pass
+        # callback functions
+        self.update_state_callback = None
+        self.update_rssi_callback = None
 
-    def setNotifyOnRSSI(self, func):
-        pass
+    @property
+    def rssi(self):
+        return self._rssi
 
-    def updatePeripheral(self):
-        pass
+    @rssi.setter
+    def rssi(self, value):
+        if self._rssi != value:
+            self._rssi = value
+            self.updateRSSI()
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        if self._state != value:
+            self._state = value
+            self.updateState()
+
+    @property
+    def serviceUUIDs(self):
+        if len(self._serviceUUIDs) == 0:
+            for service in self.services:
+                self._serviceUUIDs.append(service.UUID)
+        return self._serviceUUIDs
+
+    @serviceUUIDs.setter
+    def serviceUUIDs(self, value):
+        try:
+            self._serviceUUIDs = value[:]
+        except:
+            pass
+
+    def __getitem__(self, key):
+        if key in self.serviceUUIDs:
+            for service in self.services:
+                if service.UUID == key:
+                    return service
+        raise KeyError
+
+    def keys(self):
+        return self.serviceUUIDs
+
+    # register callbacks
+    def setNotifyState(self, func):
+        self.update_state_callback = func
+
+    def setNotifyRSSI(self, func):
+        self.update_rssi_callback = func
+
+    def updateState(self):
+        if self.update_state_callback:
+            try:
+                self.update_state_callback(self.state)
+            except Exception as e:
+                print e
+
+    def updateRSSI(self, rssi):
+        if self.update_rssi_callback:
+            try:
+                self.update_rssi_callback(rssi)
+            except Exception as e:
+                print e
 
     def __repr__(self):
         if self.name:
-            return "%s (%s)" % (self.name, str(self.UUID).upper())
+            return "Peripheral{%s (%s)}" % (self.name, str(self.UUID).upper())
         else:
-            return "UNKNOWN (%s)" % (str(self.UUID).upper())
+            return "Peripheral{UNKNOWN (%s)}" % (str(self.UUID).upper())
+
+    def __str__(self):
+        return self.__repr__()
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and (other.UUID == self.UUID)
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
 
 class Central(object):
     def __init__(self):

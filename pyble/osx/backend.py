@@ -14,6 +14,7 @@ import logging
 
 from console import OSXCmd
 import os
+from pprint import pformat
 
 try:
     from Queue import Queue, Empty
@@ -21,6 +22,8 @@ except:
     from queue import Queue, Empty
 
 logger = logging.getLogger(__name__)
+
+from pyble.roles import Peripheral
 
 class OSXPeripheralApp(OSXCmd):
     def __init__(self, p):
@@ -38,37 +41,71 @@ class OSXPeripheralApp(OSXCmd):
         self.services = []
         self.rssi = 0
 
+    def preloop(self):
+        self.parent.preloop()
         # register callbacks
-        self.p.setPeriServicesCallback(self._update_services)
-        self.p.setPeriRSSICallback(self._update_rssi)
+        self.p.setNotifyRSSI(self._update_rssi)
+        self.p.setNotifyState(self._update_state)
 
     # callbacks
-    def _update_services(self, services):
-        self.services = services
-
     def _update_rssi(self, rssi):
+        self.stdout.write("Peripheral RSSI: %d\n" % rssi)
         self.rssi = rssi
+
+    def _update_state(self, state):
+        if state == Peripheral.DISCONNECTED:
+            self.stdout.write("Peripheral disconnected, exit ...")
+            self.stdout.flush()
+            self.endloop()
 
     def do_show(self, args):
         """Show the Profile structure
         """
         pass
 
-    def do_listServices(self, args):
+    def do_list(self, args):
         """Show peripheral supported services
         """
-        print self.services
-        for service in self.services:
-            print service.show()
+        for service in self.p.services:
+            print service
 
-    def do_readProfile(self, args):
+    def do_read(self, args):
+        arglist = args.split()
+        if len(arglist) == 1:
+            # read whole profile
+            pUUID = arglist[0]
+            try:
+                pUUID = pUUID.lstrip("0x").upper()
+            except:
+                return
+            profile = self.p[pUUID]
+            print profile
+            for c in profile:
+                print c
+                print c.value
+            
+        elif len(arglist) == 2:
+            # read a char in profile
+            profile = arglist[0]
+            char = arglist[1]
+        else:
+            self.help_read()
+
+
+    def help_read(self):
+        self.stdout.write("Read Profile\n")
+        self.stdout.write("Usage: read <Profile UUID> [characteristic UUID]\n")
+        self.stdout.write("Example: read 180A\n")
+        self.stdout.write("         read 180A 2905\n")
+        self.stdout.flush()
+
+    def do_write(self, args):
         pass
 
     def do_state(self, args):
         """Show Peripheral state
         """
         print self.p
-        print self.p.state
         print self.p.rssi
 
     def do_discover(self, args):
@@ -185,17 +222,29 @@ class OSXCentralManagerApp(OSXCmd):
         """List available peripherals
         """
         count = 0
+        ans = ""
         for p in self.availablePeripherals:
-            print "%2d : %s" % (count, p)
+            ans += "%2d : %s\n" % (count, p.name)
+            ans += "     RSSI         : %d\n" % p.rssi
+            ans += "     TxPowerLevel : %d\n" % p.advTxPowerLevel
+            ans += "     Service UUIDs: %s\n" % pformat(p.advServiceUUIDs)
             count += 1
+        self.stdout.write(ans)
+        self.stdout.flush()
 
     def do_con(self, args):
         """List connected peripherals
         """
         count = 0
+        ans = ""
         for p in self.connectedPeripherals:
-            print "%2d : %s" % (count, p)
+            ans += "%2d : %s\n" % (count, p.name)
+            ans += "     RSSI         : %d\n" % p.rssi
+            ans += "     TxPowerLevel : %d\n" % p.advTxPowerLevel
+            ans += "     Service UUIDs: %s\n" % pformat(p.advServiceUUIDs)
             count += 1
+        self.stdout.write(ans)
+        self.stdout.flush()
 
     def do_execute(self, args):
         """Enter shell of connected peripheral N

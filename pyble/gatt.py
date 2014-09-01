@@ -11,6 +11,10 @@ class Service(object):
         self.name = "UNKNOWN"
         self.UUID = ""
         self.isPrimary = False
+        self.characteristics = []
+
+    def __iter__(self):
+        return iter(self.characteristics)
 
     def __eq__(self, other):
         return isinstacne(other, self.__class__) and (other.UUID == self.UUID)

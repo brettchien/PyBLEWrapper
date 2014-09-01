@@ -9,16 +9,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 import uuid
+from util import CBUUID2String
 import time
 
-class OSXCentralMangerStateError(Exception):
-    pass
-
 class OSXCentralManager(NSObject):
+    """
+    CentralManager is the host handle for performing scan, connect, disconnect to peripheral(s).
+    After a peripheral is connected, a peripheral handle would be returned.
+
+    CBCentralManager Class Reference:
+    https://developer.apple.com/librarY/mac/documentation/CoreBluetooth/Reference/CBCentralManager_Class/translated_content/CBCentralManager.html
+
+    CBCentralManagerDelegate Protocol Reference:
+    https://developer.apple.com/librarY/mac/documentation/CoreBluetooth/Reference/CBCentralManagerDelegate_Protocol/translated_content/CBCentralManagerDelegate.html
+    """
+
     def init(self):
         self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
         # initialize manager with delegate
-        self.logger.info("Initialize CBCentralManager Worker")
+        self.logger.info("Initialize CBCentralManager")
         self.manager = CBCentralManager.alloc().initWithDelegate_queue_(self, nil)
         self.scanedList = []
         self.connectedList = []
@@ -115,7 +124,6 @@ class OSXCentralManager(NSObject):
         self.logger.debug("Peripheral %s (%s) is connected" %
                           (peripheral._.name, peripheral._.identifier.UUIDString())
                           )
-
         p = self.findPeripheralFromList(peripheral, self.scanedList)
         if p:
             if p not in self.connectedList:
@@ -150,20 +158,68 @@ class OSXCentralManager(NSObject):
 
     # Discovering and Retrieving Peripherals
     def centralManager_didDiscoverPeripheral_advertisementData_RSSI_(self, central, peripheral, advertisementData, rssi):
-        self.logger.info("Found Peripheral %s", peripheral._.name)
-        self.logger.info("RSSI: %d", rssi)
-        self.logger.info("UUID: %s", peripheral._.identifier.UUIDString())
-        self.logger.info("State: %s", peripheral._.state)
-        p = OSXPeripheral.alloc().init()
+        temp = OSXPeripheral.alloc().init()
+        idx = -1
+        p = None
+        try:
+            idx = self.scanedList.index(temp)
+        except ValueError:
+            idx = -1
+        except Exception as e:
+            self.logger.error(str(e))
+        if idx >= 0:
+            p = self.scanedList[idx]
+        else:
+            p = temp
         p.instance = peripheral
-        p.UUID=uuid.UUID(peripheral._.identifier.UUIDString())
+        p.UUID = uuid.UUID(peripheral._.identifier.UUIDString())
         p.name=peripheral._.name
-        p.advertisementData=advertisementData
-        p.rssi=rssi
+        # handle advertisement data
+        #   local name
+        if CBAdvertisementDataLocalNameKey in advertisementData:
+            p.advLocalName = advertisementData[CBAdvertisementDataLocalNameKey]
+        #   manufacturer data
+        if CBAdvertisementDataManufacturerDataKey in advertisementData: 
+            p.advManufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey]
+        #   provided services UUIDs
+        if CBAdvertisementDataServiceUUIDsKey in advertisementData: 
+            p.advServiceUUIDS = []
+            UUIDs = advertisementData[CBAdvertisementDataServiceUUIDsKey]
+            for UUID in UUIDs:
+                p.advServiceUUIDs.append(CBUUID2String(UUID._.data))
+        #   Tx Power Level
+        if CBAdvertisementDataTxPowerLevelKey in advertisementData:
+            p.advTxPowerLevel = int(advertisementData[CBAdvertisementDataTxPowerLevelKey])
+        #   ServiceData
+        if CBAdvertisementDataServiceDataKey in advertisementData:
+            p.advServiceData = advertisementData[CBAdvertisementDataServiceDataKey]
+        #   OverflowServiceUUIDs
+        if CBAdvertisementDataOverflowServiceUUIDsKey in advertisementData:
+            p.advOverflowServiceUUIDs = []
+            UUIDs = advertisementData[CBAdvertisementDataOverflowServiceUUIDsKey]
+            for UUID in UUIDs:
+                p.advOverflowServiceUUIDs.append(CBUUID2String(UUID._.data))
+        #   IsConnectable 
+        if CBAdvertisementDataIsConnectable in advertisementData:
+            p.advIsConnectable = advertisementData[CBAdvertisementDataIsConnectable]
+            print p.advIsConnectable
+        #   SolicitedServiceUUIDs
+        if CBAdvertisementDataSolicitedServiceUUIDsKey in advertisementData:
+            p.advSolicitedServiceUUIDs = []
+            UUIDs = advertisementData[CBAdvertisementDataSolicitedServiceUUIDsKey]
+            for UUID in UUIDs:
+                p.advSolicitedServiceUUIDs.append(CBUUID2String(UUID._.data))
+        # RSSI
+        p.rssi = rssi
+
         if p not in self.scanedList:
             self.scanedList.append(p)
-        # update lists
-        self.updateAvailableList()
+            self.logger.info("Found Peripheral %s", peripheral._.name)
+            self.logger.info("RSSI: %d", rssi)
+            self.logger.info("UUID: %s", peripheral._.identifier.UUIDString())
+            self.logger.info("State: %s", peripheral._.state)
+            # update lists
+            self.updateAvailableList()
 
     def centralManager_didRetrieveConnectedPeripherals_(self, central, peripherals):
         self.logger.debug("didRetrieveConnectedPeripherals")

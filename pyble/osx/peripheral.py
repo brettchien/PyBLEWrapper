@@ -98,6 +98,7 @@ class OSXPeripheral(NSObject, Peripheral):
             self.logger.error("UNKOWN Peripheral State: " + value)
         self.updateState()
 
+    # decorators for condition variables
     def _waitResp(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -111,12 +112,17 @@ class OSXPeripheral(NSObject, Peripheral):
                         break
         return wrapper
 
-    def _notifyResp(self):
-        self.ready = True
-        try:
-            self.cv.notifyAll()
-        except Exception as e:
-            print e
+    def _notifyResp(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            func(self, *args, **kwargs)
+            self.ready = True
+            with self.cv:
+                try:
+                    self.cv.notifyAll()
+                except Exception as e:
+                    print e
+        return wrapper
 
     @_waitResp
     def readRSSI(self):
@@ -168,11 +174,17 @@ class OSXPeripheral(NSObject, Peripheral):
         return None
 
     # CBPeripheral Delegate functions
+    # objc delegate functions cannot be applied with decorators
+    # make addtional functions to enable decorators
     # Discovering Services
     def peripheral_didDiscoverServices_(self, peripheral, error):
+        self.didDiscoverServices(peripheral, error)
+
+    @_notifyResp
+    def didDiscoverServices(self, peripheral, error):
         if error != nil:
             if error._.code == CBErrorNotConnected:
-                self.state = Peripheral.DISCONNECT
+                self.state = Peripheral.DISCONNECTED
             return
         if peripheral._.services:
             self.logger.debug("%s discovered services" % self)
@@ -180,13 +192,15 @@ class OSXPeripheral(NSObject, Peripheral):
                 s = OSXBLEService(self, service)
                 self._services.append(s)
 
-        self._notifyResp()
-
     def peripheral_didDiscoverIncludeServicesForService_error_(self, peripheral, service, error):
         self.logger.debug("%s discovered Include Services" % self)
 
     # Discovering Characteristics and Characteristic Descriptors
     def peripheral_didDiscoverCharacteristicsForService_error_(self, peripheral, service, error):
+        self.didDiscoverCharacteristicsForService(peripheral, service, error)
+
+    @_notifyResp
+    def didDiscoverCharacteristicsForService(self, peripheral, service, error):
         if error != nil:
             print error
             return
@@ -200,9 +214,11 @@ class OSXPeripheral(NSObject, Peripheral):
 #            if characteristic.properties["read"]:
 #                peripheral.readValueForCharacteristic_(c)
 
-        self._notifyResp()
-
     def peripheral_didDiscoverDescriptorsForCharacteristic_error_(self, peripheral, characteristic, error):
+        self.didDiscoverDescriptorsForCharacteristic(peripheral, characteristic, error)
+
+    @_notifyResp
+    def didDiscoverDescriptorsForCharacteristic(self, peripheral, characteristic, error):
         s = self.findServiceByCharacteristicInstance(characteristic)
         p = s.peripheral
         c = s.findCharacteristicByInstance(characteristic)
@@ -213,26 +229,30 @@ class OSXPeripheral(NSObject, Peripheral):
             if descriptor.UUID == "2901":
                 peripheral.readValueForDescriptor_(d)
 
-        self._notifyResp()
-
     # Retrieving Characteristic and characteristic Descriptor Values
     def peripheral_didUpdateValueForCharacteristic_error_(self, peripheral, characteristic, error):
+        self.didUpdateValueForCharacteristic(peripheral, characteristic, error)
+
+    @_notifyResp
+    def didUpdateValueForCharacteristic(self, peripheral, characteristic, error):
         s = self.findServiceByCharacteristicInstance(characteristic)
         p = s.peripheral
         c = s.findCharacteristicByInstance(characteristic)
-        value = Nonei
+        value = None
         if error == nil:
             # converting NSData to bytestring
             value = bytes(characteristic._.value)
             c.value = value
-#            peripheral.readRSSI()
             self.logger.debug("%s:%s:%s updated value: %s" % (p, s, c, pformat(value)))
         else:
             self.logger.debug("%s:%s:%s %s" % (p, s, c, str(error)))
 
-        self._notifyResp()
 
     def peripheral_didUpdateValueForDescriptor_error_(self, peripheral, descriptor, error):
+        self.didUpdateValueForDescriptor_error(peripheral, descriptor, error)
+
+    @_notifyResp
+    def didUpdateValueForDescriptor_error(self, peripheral, descriptor, error):
         s = self.findServiceByDescriptorInstance(descriptor)
         p = s.peripheral
         c = self.findCharacteristicByDescriptorInstance(descriptor)
@@ -245,8 +265,6 @@ class OSXPeripheral(NSObject, Peripheral):
             self.logger.debug("%s:%s:%s:%s updated value: %s" % (p, s, c, d, pformat(value)))
         else:
             self.logger.debug("%s:%s:%s:%s %s" % (p, s, c, d, str(error)))
-
-        self._notifyResp()
 
     # Writing Characteristic and Characteristic Descriptor Values
     def peripheral_didWriteValueForCharacteristic_error_(self, peripheral, characteristic, error):
@@ -271,6 +289,10 @@ class OSXPeripheral(NSObject, Peripheral):
 
     # Retrieving a Peripheral's Received Signal Strength Indicator(RSSI) Data
     def peripheralDidUpdateRSSI_error_(self, peripheral, error):
+        self.didUpdateRSSI(peripheral, error)
+
+    @_notifyResp
+    def didUpdateRSSI(self, peripheral, error):
         if error == nil:
             rssi = int(peripheral.RSSI())
             if rssi == 127:
@@ -280,8 +302,6 @@ class OSXPeripheral(NSObject, Peripheral):
             self.rssi = rssi
         else:
             print error
-
-        self._notifyResp()
 
     # Monitoring Changes to a Peripheral's Name or Services
     def peripheralDidUpdateName_(self, peripheral):

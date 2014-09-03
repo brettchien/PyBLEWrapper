@@ -16,10 +16,7 @@ class OSXBLEService(Service):
             super().__init__()
         except:
             super(OSXBLEService, self).__init__()
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
         self.instance = instance
-        self.name = "UNKNOWN"
-        self.UUID = ""
         uuidBytes = instance._.UUID._.data
         if len(uuidBytes) == 2:
             self.name = str(instance._.UUID)
@@ -32,9 +29,23 @@ class OSXBLEService(Service):
             # invalid UUID size
             pass
         self.isPrimary = (instance._.isPrimary == YES)
-        self.includeServices = []
         # which peripheral own this service
         self.peripheral = peripheral
+
+    @property
+    def characteristicUUIDs(self):
+        if len(self._characteristicUUIDs) == 0:
+            self.peripheral.discoverCharacteristicsForService(self.instance)
+            for characteristic in self.characteristics:
+                self._characteristicUUIDs.append(characteristic.UUID)
+        return self._characteristicUUIDs
+ 
+    @characteristicUUIDs.setter
+    def characteristicUUIDs(self, value):
+        try:
+            self._characteristicUUIDs = value[:]
+        except:
+            pass
 
     def __iter__(self):
         if len(self.characteristics) == 0:
@@ -45,7 +56,7 @@ class OSXBLEService(Service):
         print self
         for c in self.characteristics:
             print "  " + str(c)
-            print "    Description: %s" % (str(c.userdescription))
+            print "    Description: %s" % (str(c.description))
             print "    Value      : ", pformat(c.value)
 
     def findCharacteristicByInstance(self, instance):
@@ -54,40 +65,19 @@ class OSXBLEService(Service):
                 return c
         return None
 
-    def addCharacteristic(self, characteristic):
-        if characteristic not in self.characteristics:
-            self.characteristics.append(characteristic)
-
-    def removeCharacteristic(self, characteristic):
-        if characteristic in self.characteristics:
-            self.characteristics.remove(characteristic)
-
     def getCharacteristicByInstance(self, instance):
         for c in self.characteristics:
             if str(c.UUID) == CBUUID2String(instance._.UUID._.data):
                 return c
         return None
 
-    def __repr__(self):
-        identifier = ""
-        if isinstance(self.UUID, type("")):
-            identifier = self.UUID
-        else:
-            identifier = str(self.UUID).upper()
-        if self.isPrimary:
-            return "*Service{%s <%s>}" % (self.name, identifier)
-        else:
-            return "Service{%s <%s>}" % (self.name, identifier)
-
-    def __str__(self):
-        return self.__repr__()
-
 class OSXBLECharacteristic(Characteristic):
     def __init__(self, service, instance):
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
+        try:
+            super().__init__()
+        except:
+            super(OSXBLECharacteristic, self).__init__()
         self.service = service
-        self.name = "UNKNOWN"
-        self.UUID = ""
         uuidBytes = instance._.UUID._.data
         if len(uuidBytes) == 2:
             self.name = str(instance._.UUID)
@@ -100,8 +90,6 @@ class OSXBLECharacteristic(Characteristic):
             # invalid UUID size
             pass
 
-        self._value = None
-        self.descriptors = []
         self._description = ""
         self.properties = {
             "broadcast": False,                 # 0x0001
@@ -115,15 +103,13 @@ class OSXBLECharacteristic(Characteristic):
             "notifyEncryptionRequired": False,  # 0x0100
             "indicateEncryptionRequired": False # 0x0200
         }
-        self.isNotifying = False
-        self.isBroadcasted = False
 
         # update basic info
         self.instance = instance
 
     # callbacks
     def _update_userdescription(self, description):
-        self.description = description
+        self._description = description
 
     def _update_value(self, value):
         self.value = value
@@ -133,10 +119,6 @@ class OSXBLECharacteristic(Characteristic):
             self.descriptors.append(descriptor)
             if descriptor.UUID == "2901": # user description descriptor
                 descriptor.setDescriptorUserDescriptionCallback(self._update_userdescription)
-
-    def removeDescriptor(self, descriptor):
-        if descriptor in self.descriptors:
-            self.descriptors.remove(descriptor)
 
     def findDescriptorByInstance(self, instance):
         for d in self.descriptors:
@@ -166,7 +148,7 @@ class OSXBLECharacteristic(Characteristic):
 
     @property
     def value(self):
-        if self._value == None:
+        if self._value == None and self.properties["read"]:
             self.service.peripheral.readValueForCharacteristic(self.instance)
         return self._value
 
@@ -177,9 +159,21 @@ class OSXBLECharacteristic(Characteristic):
 
     @property
     def description(self):
-        if self._description == None:
-            pass
+        if len(self._description) == 0:
+            if len(self.descriptors) == 0:
+                self.service.peripheral.discoverDescriptorsForCharacteristic(self.instance)
+        d = None
+        for descriptor in self.descriptors:
+            if descriptor.UUID == "2901":
+                d = descriptor
+                break
+        if d:
+            self._description = d.value
         return self._description
+
+    @description.setter
+    def description(self, value):
+        self._description = value
 
     def updateProperties(self, properties):
         for key in self.properties:
@@ -205,24 +199,13 @@ class OSXBLECharacteristic(Characteristic):
         if properties & 0x0200:
             self.properties["indicateEncryptionRequired"] = True
 
-    def __repr__(self):
-        identifier = ""
-        if isinstance(self.UUID, type("")):
-            identifier = self.UUID
-        else:
-            identifier = str(self.UUID).upper()
-        return "Characteristic{%s <%s>}" % (self.name, identifier)
-
-    def __str__(self):
-        return self.__repr__()
-
-
 class OSXBLEDescriptor(Descriptor):
     def __init__(self, characteristic, instance):
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
-        self._instance = instance
-        self.name = "UNKNOWN"
-        self.UUID = ""
+        try:
+            super().__init__()
+        except:
+            super(OSXBLEDescriptor, self).__init__()
+        self.instance = instance
         uuidBytes = instance._.UUID._.data
         if len(uuidBytes) == 2:
             self.name = str(instance._.UUID)
@@ -245,15 +228,9 @@ class OSXBLEDescriptor(Descriptor):
         self.update_userdescription = func
 
     @property
-    def instance(self):
-        return self._instance
-
-    @instance.setter
-    def instance(self, value):
-        self._instance = value
-
-    @property
     def value(self):
+        if self._value == None:
+            self.characteristic.service.peripheral.readValueForDescriptor(self.instance)
         return self._value
 
     @value.setter

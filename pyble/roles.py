@@ -1,19 +1,22 @@
+import logging
+from patterns import LoggerObject
 
-class Peripheral(object):
+class Peripheral(LoggerObject):
     DISCONNECTED = 0
     CONNECTING = 1
     CONNECTED = 2
 
-    def __init__(self, instance=None, uuid=None, name="", advertisementData=None, rssi=0, address=""):
-        self.instance = instance
+    def __init__(self, uuid=None, name="", rssi=0, address=""):
+        try:
+            super().__init__()
+        except:
+            super(Peripheral, self).__init__()
         self.name = name
         self.UUID = uuid
-        self.advertisementData = advertisementData
         self._rssi = rssi
         self.address = address
         self.services = []
         self._serviceUUIDs = []
-        self.delegate = None
         self._state = Peripheral.DISCONNECTED
 
         # callback functions
@@ -55,6 +58,7 @@ class Peripheral(object):
             pass
 
     def __getitem__(self, key):
+        key = key.upper()
         if key in self.serviceUUIDs:
             for service in self.services:
                 if service.UUID == key:
@@ -100,6 +104,13 @@ class Peripheral(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-class Central(object):
+class Central(LoggerObject):
     def __init__(self):
-        pass
+        try:
+            super().__init__()
+        except:
+            super(Central, self).__init__()
+
+        self.availableList = []
+        self.connectedList = []
+

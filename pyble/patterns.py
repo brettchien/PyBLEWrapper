@@ -21,3 +21,25 @@ class deprecated(object):
         if self.count == 1:
             print self.func.__name__, "is deprecated"
         return func(*args, **kwargs)
+
+# debuggable
+import logging
+class LoggerObject(object):
+    def __init__(self):
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger("%s.%s" % (self.__class__.__module__, self.__class__.__name__))
+        self.logger.setLevel(logging.INFO)
+        self._debug = False
+
+    @property
+    def debug(self):
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        if value:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
+        self._debug = value
+

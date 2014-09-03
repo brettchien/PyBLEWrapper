@@ -13,11 +13,14 @@ try:
 except:
     from Queue import Queue, Empty
 
+from pyble.patterns import LoggerObject
 
-class OSXCmd(cmd.Cmd, object):
+class OSXCmd(cmd.Cmd, LoggerObject):
     def __init__(self, history_size=10):
+        # both cmd.Cmd, LoggerObject need to be init.
         cmd.Cmd.__init__(self)
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
+        LoggerObject.__init__(self)
+
         self.cmdqueue = Queue() 
         self.history_size = history_size
 
@@ -92,7 +95,6 @@ class OSXCmd(cmd.Cmd, object):
     def endloop(self):
         self.cmdqueue.put("exit")
 
-
     def precmd(self, line):
         self._history += [ line.strip() ]
         if len(self._history) > self.history_size:
@@ -113,6 +115,28 @@ class OSXCmd(cmd.Cmd, object):
         """
         os.system(args)
 
+    def do_debug(self, args):
+        """Enable/disable debugging information
+        """
+        if not hasattr(self, 'debug'):
+            return
+        option = args.strip()
+        if option == "":
+            pass
+        elif option == "True":
+            self.debug = True
+        elif option == "False":
+            self.debug = False
+        else:
+            self.stdout.write("Only accept True/False\n")
+        ans = "%s is %sin debug mode.\n"
+        if self.debug:
+            ans = ans % (self, "")
+        else:
+            ans = ans % (self, "not ")
+        self.stdout.write(ans)
+        self.stdout.flush()
+
     def default(self, line):
         if len(line.strip()):
             self.do_eval(line)
@@ -126,11 +150,20 @@ class OSXCmd(cmd.Cmd, object):
         output = ""
         try:
             output = eval(line)
+        except NameError:
+            cmd, args, line = self.parseline(line)
+            self.commandNotFound(cmd)
+        except SyntaxError:
+            cmd, args, line = self.parseline(line)
+            self.commandNotFound(cmd)
         except Exception as e:
             self.stdout.write(pformat(e) + "\n")
         if output and len(pformat(output)):
             self.stdout.write(pformat(output) + "\n")
         self.stdout.flush()
+
+    def commandNotFound(self, cmd):
+        self.stdout.write("Command: '%s' is not yet support by %s\n" % (cmd, self.__class__.__name__))
 
     def do_hist(self, args):
         """Show last N command history

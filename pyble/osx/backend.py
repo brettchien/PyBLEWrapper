@@ -7,7 +7,6 @@ from centralManager import OSXCentralManager
 
 # HCI command
 from hci import OSXHCICommand
-#from gatt import Service, Profile, Characteristic
 
 from threading import Thread, Event
 import logging
@@ -24,6 +23,8 @@ except:
 logger = logging.getLogger(__name__)
 
 from pyble.roles import Peripheral
+from pyble.patterns import LoggerObject
+import time
 
 class OSXPeripheralApp(OSXCmd):
     def __init__(self, p):
@@ -36,9 +37,6 @@ class OSXPeripheralApp(OSXCmd):
         self.p = p
         self.prompt = "P{%s}$ " % (p.name)
 
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
-
-        self.services = []
         self.rssi = 0
 
     def preloop(self):
@@ -49,14 +47,35 @@ class OSXPeripheralApp(OSXCmd):
 
     # callbacks
     def _update_rssi(self, rssi):
-        self.stdout.write("Peripheral RSSI: %d\n" % rssi)
         self.rssi = rssi
+        self.prompt = "P{%s} (RSSI:%d) $ " % (self.p.name, self.rssi)
 
     def _update_state(self, state):
         if state == Peripheral.DISCONNECTED:
             self.stdout.write("Peripheral disconnected, exit ...")
             self.stdout.flush()
             self.endloop()
+
+    def do_debug(self, args):
+        """Enable/disable peripheral debugging information
+        """
+        OSXCmd.do_debug(self, args)
+        option = args.strip()
+        if option == "":
+            pass
+        elif option == "True":
+            self.p.debug = True
+        elif option == "False":
+            self.p.debug = False
+        else:
+            self.stdout.write("Only accept True/False\n")
+        ans = "%s is %sin debug mode.\n"
+        if self.p.debug:
+            ans = ans % (self.p, "")
+        else:
+            ans = ans % (self.p, "not ")
+        self.stdout.write(ans)
+        self.stdout.flush()
 
     def do_show(self, args):
         """Show the Profile structure
@@ -81,16 +100,20 @@ class OSXPeripheralApp(OSXCmd):
             profile = self.p[pUUID]
             print profile
             for c in profile:
-                print c
-                print c.value
+                print " ", c
+                print "    Description: ", c.description
+                print "    Value      : ", c.value
             
         elif len(arglist) == 2:
             # read a char in profile
-            profile = arglist[0]
-            char = arglist[1]
+            pUUID = arglist[0]
+            cUUID = arglist[1]
+            profile = self.p[pUUID]
+            char = self.p[pUUID][cUUID]
+
+            print char, char.value
         else:
             self.help_read()
-
 
     def help_read(self):
         self.stdout.write("Read Profile\n")
@@ -107,24 +130,16 @@ class OSXPeripheralApp(OSXCmd):
         """
         print self.p
         print self.p.rssi
-
-    def do_discover(self, args):
-        """Discover Peripheral provided services
-        """
-        self.p.discoverServices()
-
  
 class OSXCentralManagerApp(OSXCmd):
     def __init__(self, shell=False):
         # init. super class
         try:
-            self.parent = super()
+            super().__init__()
         except:
-            self.parent = super(OSXCentralManagerApp, self)
-        self.parent.__init__()
+            super(OSXCentralManagerApp, self).__init__()
         self.prompt = "EcoBLE $ "
 
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
         # init. CoreBluetooth Central Manager
         self.centralManager = OSXCentralManager.alloc().init()
         # register callbacks
@@ -169,11 +184,10 @@ class OSXCentralManagerApp(OSXCmd):
         return self.ready
 
     def start(self):
-        self.parent.preloop()
+        OSXCmd.preloop()
         # python process and osx process co-existence
         while (not self.stop.is_set()):
             self.osx_runloop.runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
-            
             try:
                 msg = self.inq.get_nowait()
                 self.handleMessage(msg)
@@ -185,20 +199,13 @@ class OSXCentralManagerApp(OSXCmd):
                 self.halt()
 
         # termination
-        self.parent.postloop()
+        OSXCmd.postloop()
 
     def do_EOF(self, line):
         return self.do_exit(line)
 
-    def default(self, line):
-        cmd, arg, line = self.parseline(line)
-        self.commandNotFound(cmd)
-
     def handleMessage(self, msg):
         self.onecmd(msg)
-
-    def commandNotFound(self, cmd):
-        print "Command: %s is not yet support by %s" % (cmd, self.__class__.__name__)
 
     def do_exit(self, args):
         """ Exit Program
@@ -304,9 +311,7 @@ class OSXCentralManagerApp(OSXCmd):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
     app = OSXCentralManagerApp(shell=True)
-    print app
     try:
         app.cmdloop()
     except Exception as e:

@@ -27,14 +27,6 @@ class OSXPeripheral(NSObject, Peripheral):
     """
     def init(self):
         Peripheral.__init__(self)
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
-        self.instance = None
-        self.peripheral = None
-        self.name = ""
-        self.UUID = ""
-        self._state = Peripheral.DISCONNECTED
-        self._services = []
-        self._rssi = 0
 
         self.cv = Condition()
         self.ready = False
@@ -137,6 +129,10 @@ class OSXPeripheral(NSObject, Peripheral):
         self.instance.discoverCharacteristics_forService_(nil, service)
 
     @_waitResp
+    def discoverDescriptorsForCharacteristic(self, characteristic):
+        self.instance.discoverDescriptorsForCharacteristic_(characteristic)
+
+    @_waitResp
     def readValueForCharacteristic(self, characteristic):
         self.instance.readValueForCharacteristic_(characteristic)
 
@@ -210,9 +206,6 @@ class OSXPeripheral(NSObject, Peripheral):
         for c in service._.characteristics:
             characteristic = OSXBLECharacteristic(s, c)
             s.addCharacteristic(characteristic)
-#            peripheral.discoverDescriptorsForCharacteristic_(c)
-#            if characteristic.properties["read"]:
-#                peripheral.readValueForCharacteristic_(c)
 
     def peripheral_didDiscoverDescriptorsForCharacteristic_error_(self, peripheral, characteristic, error):
         self.didDiscoverDescriptorsForCharacteristic(peripheral, characteristic, error)
@@ -226,8 +219,6 @@ class OSXPeripheral(NSObject, Peripheral):
         for d in characteristic._.descriptors:
             descriptor = OSXBLEDescriptor(c, d)
             c.addDescriptor(descriptor)
-            if descriptor.UUID == "2901":
-                peripheral.readValueForDescriptor_(d)
 
     # Retrieving Characteristic and characteristic Descriptor Values
     def peripheral_didUpdateValueForCharacteristic_error_(self, peripheral, characteristic, error):
@@ -271,10 +262,17 @@ class OSXPeripheral(NSObject, Peripheral):
         s = self.findServiceByCharacteristicInstance(characteristic)
         p = s.peripheral
         c = s.findCharacteristicByInstance(characteristic)
-        self.logger.debug("Characteristic Value Write Done")
+        if error == nil:
+            self.logger.debug("Characteristic Value Write Done")
+        else:
+            self.logger.debug("Characteristic Value Write Fail")
+
 
     def peripheral_didWriteValueForDescriptor_error_(self, peripheral, descriptor, error):
-        self.logger.debug("Descriptor Value write Done")
+        if error == nil:
+            self.logger.debug("Descriptor Value write Done")
+        else:
+            self.logger.debug("Descriptor Value write Fail")
 
     # Managing Notifications for a Characteristic's Value
     def peripheral_didUpdateNotificationStateForCharacteristic_error_(self, peripheral, characteristic, error):
@@ -285,6 +283,8 @@ class OSXPeripheral(NSObject, Peripheral):
         if error != nil:
             result = "Fail"
             print error
+        else:
+            c.isNotifying = True
         self.logger.debug("%s:%s:$s set Notification %s" % (p, s, c, result))
 
     # Retrieving a Peripheral's Received Signal Strength Indicator(RSSI) Data

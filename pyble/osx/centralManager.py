@@ -3,7 +3,7 @@ from Foundation import *
 from IOBluetooth import *
 
 from peripheral import OSXPeripheral
-from pyble.roles import Peripheral
+from pyble.roles import Peripheral, Central
 
 import logging
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ import uuid
 from util import CBUUID2String
 import time
 
-class OSXCentralManager(NSObject):
+class OSXCentralManager(NSObject, Central):
     """
     CentralManager is the host handle for performing scan, connect, disconnect to peripheral(s).
     After a peripheral is connected, a peripheral handle would be returned.
@@ -25,7 +25,11 @@ class OSXCentralManager(NSObject):
     """
 
     def init(self):
-        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
+        try:
+            super().__init__()
+        except:
+            super(OSXCentralManager, self).__init__()
+#        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
         # initialize manager with delegate
         self.logger.info("Initialize CBCentralManager")
         self.manager = CBCentralManager.alloc().initWithDelegate_queue_(self, nil)

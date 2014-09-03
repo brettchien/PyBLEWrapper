@@ -6,6 +6,7 @@ import os
 import logging
 
 import time
+from pprint import pformat
 
 try:
     from queue import Queue, Empty
@@ -111,6 +112,25 @@ class OSXCmd(cmd.Cmd, object):
         """Execute shell command
         """
         os.system(args)
+
+    def default(self, line):
+        if len(line.strip()):
+            self.do_eval(line)
+
+    def do_eval(self, args):
+        """Evaluate python statement
+        """
+        line = args.strip()
+        if len(line) == 0:
+            return
+        output = ""
+        try:
+            output = eval(line)
+        except Exception as e:
+            self.stdout.write(pformat(e) + "\n")
+        if output and len(pformat(output)):
+            self.stdout.write(pformat(output) + "\n")
+        self.stdout.flush()
 
     def do_hist(self, args):
         """Show last N command history

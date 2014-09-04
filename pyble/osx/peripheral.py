@@ -16,8 +16,11 @@ from threading import Condition
 
 from functools import wraps
 
+from pyble.patterns import Trace
+
 logger = logging.getLogger(__name__)
 
+@Trace
 class OSXPeripheral(NSObject, Peripheral):
     """
     Connected Peripheral

@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 import uuid
 from util import CBUUID2String
 import time
+from pyble.patterns import Trace
 
+@Trace
 class OSXCentralManager(NSObject, Central):
     """
     CentralManager is the host handle for performing scan, connect, disconnect to peripheral(s).
@@ -29,7 +31,6 @@ class OSXCentralManager(NSObject, Central):
             super().__init__()
         except:
             super(OSXCentralManager, self).__init__()
-#        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
         # initialize manager with delegate
         self.logger.info("Initialize CBCentralManager")
         self.manager = CBCentralManager.alloc().initWithDelegate_queue_(self, nil)

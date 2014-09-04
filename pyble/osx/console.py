@@ -61,8 +61,8 @@ class OSXCmd(cmd.Cmd, LoggerObject):
                 self.stdout.write(self.prompt)
                 self.stdout.flush()
                 showPrompt = False
-            NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantFuture())
             try:
+                NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
                 line = self.cmdqueue.get_nowait()
                 if not len(line):
                     line = "EOF"
@@ -75,8 +75,11 @@ class OSXCmd(cmd.Cmd, LoggerObject):
                 showPrompt = True
             except Empty:
                 continue
+            except KeyboardInterrupt:
+                break
             except Exception as e:
-                print e
+                import traceback
+                print traceback.format_exc()
                 break
         # cleanup
         self.postloop()
@@ -130,10 +133,11 @@ class OSXCmd(cmd.Cmd, LoggerObject):
         else:
             self.stdout.write("Only accept True/False\n")
         ans = "%s is %sin debug mode.\n"
+        cls_name = self.__class__.__name__
         if self.debug:
-            ans = ans % (self, "")
+            ans = ans % (cls_name, "")
         else:
-            ans = ans % (self, "not ")
+            ans = ans % (cls_name, "not ")
         self.stdout.write(ans)
         self.stdout.flush()
 

@@ -10,6 +10,9 @@ import struct
 
 logger = logging.getLogger(__name__)
 
+from pyble.patterns import Trace
+
+@Trace
 class OSXBLEService(Service):
     def __init__(self, peripheral, instance):
         try:

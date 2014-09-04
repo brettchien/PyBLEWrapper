@@ -23,9 +23,11 @@ except:
 logger = logging.getLogger(__name__)
 
 from pyble.roles import Peripheral
-from pyble.patterns import LoggerObject
-import time
+from pyble.patterns import LoggerObject, Trace, TraceObject
 
+import atexit
+
+@Trace
 class OSXPeripheralApp(OSXCmd):
     def __init__(self, p):
         # init. super class
@@ -130,7 +132,8 @@ class OSXPeripheralApp(OSXCmd):
         """
         print self.p
         print self.p.rssi
- 
+
+@Trace
 class OSXCentralManagerApp(OSXCmd):
     def __init__(self, shell=False):
         # init. super class
@@ -138,6 +141,7 @@ class OSXCentralManagerApp(OSXCmd):
             super().__init__()
         except:
             super(OSXCentralManagerApp, self).__init__()
+        atexit.register(self.exitApp, self)
         self.prompt = "EcoBLE $ "
 
         # init. CoreBluetooth Central Manager
@@ -164,6 +168,13 @@ class OSXCentralManagerApp(OSXCmd):
         # init. variables
         self.availablePeripherals = []
         self.connectedPeripherals = []
+
+        self.trace = TraceObject()
+
+    @staticmethod
+    def exitApp(instance):
+        instance.do_exit("")
+        instance.stdout.flush()
 
     # callbacks
     def _setReady(self):
@@ -224,6 +235,9 @@ class OSXCentralManagerApp(OSXCmd):
         """Stop scan command
         """
         self.hciTool.stopScan()
+
+    def do_test(self, args):
+        raise NameError
 
     def do_list(self, args):
         """List available peripherals

@@ -31,6 +31,8 @@ class OSXCentralManager(NSObject, Central):
             super().__init__()
         except:
             super(OSXCentralManager, self).__init__()
+        # enable trace
+        self.trace.traceInstance(self)
         # initialize manager with delegate
         self.logger.info("Initialize CBCentralManager")
         self.manager = CBCentralManager.alloc().initWithDelegate_queue_(self, nil)
@@ -126,6 +128,9 @@ class OSXCentralManager(NSObject, Central):
     # CBCentralManager delegate methods
     # Monitoring Connections with Peripherals
     def centralManager_didConnectPeripheral_(self, central, peripheral):
+        self.didConnectPeripheral(central, peripheral)
+
+    def didConnectPeripheral(self, central, peripheral):
         self.logger.debug("Peripheral %s (%s) is connected" %
                           (peripheral._.name, peripheral._.identifier.UUIDString())
                           )
@@ -142,6 +147,9 @@ class OSXCentralManager(NSObject, Central):
         self.updateConnectedList()
 
     def centralManager_didDisconnectPeripheral_error_(self, central, peripheral, error):
+        self.didDisconnectPeripheral(central, peripheral, error)
+
+    def didDisconnectPeripheral(self, central, peripheral, error):
         self.logger.debug("Peripheral %s disconnected" % peripheral._.name)
         p = self.findPeripheralFromList(peripheral, self.connectedList)
         if p:
@@ -153,16 +161,21 @@ class OSXCentralManager(NSObject, Central):
         self.updateConnectedList()
 
     def centralManager_didFailToConnectPeripheral_error_(self, central, peripheral, error):
+        self.didFailtoConnectPeripheral(central, peripheral, error)
+
+    def didFailtoConnectPeripheral(self, central, peripheral, error):
         self.logger.debug("Fail to connect Peripheral %s" % peripheral._.name)
         p = self.findPeripheralFromList(peripheral, self.scanedList)
         if p:
-#            self.scanedList.remove(p)
             p.state = Peripheral.DISCONNECTED
         # update lists
         self.updateAvailableList()
 
     # Discovering and Retrieving Peripherals
     def centralManager_didDiscoverPeripheral_advertisementData_RSSI_(self, central, peripheral, advertisementData, rssi):
+        self.didDiscoverPeripheral(central, peripheral, advertisementData, rssi)
+
+    def didDiscoverPeripheral(self, central, peripheral, advertisementData, rssi):
         temp = OSXPeripheral.alloc().init()
         idx = -1
         p = None
@@ -234,6 +247,9 @@ class OSXCentralManager(NSObject, Central):
 
     # Monitoring Changes to the Central Manager's State
     def centralManagerDidUpdateState_(self, central):
+        self.didUpdateState(central)
+
+    def didUpdateState(self, central):
         ble_state = central._.state
         if ble_state == CBCentralManagerStateUnkown:
             self.logger.debug("CentralManager State: Unkown")

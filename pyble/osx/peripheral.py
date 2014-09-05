@@ -30,6 +30,7 @@ class OSXPeripheral(NSObject, Peripheral):
     """
     def init(self):
         Peripheral.__init__(self)
+        self.trace.traceInstance(self)
 
         self.cv = Condition()
         self.ready = False
@@ -243,10 +244,10 @@ class OSXPeripheral(NSObject, Peripheral):
 
 
     def peripheral_didUpdateValueForDescriptor_error_(self, peripheral, descriptor, error):
-        self.didUpdateValueForDescriptor_error(peripheral, descriptor, error)
+        self.didUpdateValueForDescriptor(peripheral, descriptor, error)
 
     @_notifyResp
-    def didUpdateValueForDescriptor_error(self, peripheral, descriptor, error):
+    def didUpdateValueForDescriptor(self, peripheral, descriptor, error):
         s = self.findServiceByDescriptorInstance(descriptor)
         p = s.peripheral
         c = self.findCharacteristicByDescriptorInstance(descriptor)

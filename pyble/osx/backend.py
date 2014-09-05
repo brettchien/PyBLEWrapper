@@ -175,6 +175,7 @@ class OSXCentralManagerApp(OSXCmd):
     def exitApp(instance):
         instance.do_exit("")
         instance.stdout.flush()
+        sys.settrace(None)
 
     # callbacks
     def _setReady(self):
@@ -329,5 +330,7 @@ if __name__ == "__main__":
     try:
         app.cmdloop()
     except Exception as e:
+        import traceback
+        print traceback.print_exc()
         print e
 

@@ -39,7 +39,16 @@ class TraceObject(object):
         self._running = False
         self.TRACE_INTO = []
         self.TRACE_FILES = []
+        self.TRACE_CLASS = []
         self._trace = []
+
+    def addClass(self, cls):
+        if cls not in self.TRACE_CLASS:
+            self.TRACE_CLASS.append(cls)
+
+    def removeClass(self, cls):
+        if cls in self.TRACE_CLASS:
+            self.TRACE_CLASS.remove(cls)
 
     def addFile(self, fname):
         if fname not in self.TRACE_FILES:
@@ -63,6 +72,25 @@ class TraceObject(object):
         self._trace.append(trace)
 
     @staticmethod
+    def traceInstance(instance):
+        trace = TraceObject()
+        cls = instance.__class__
+        cls_name = cls.__name__
+        filename = inspect.getfile(cls)
+        if filename.endswith(".pyc") or filename.endswith(".pyo"):
+            filename = filename[:-1]
+        trace.addFile(filename)
+        trace.addClass(cls_name)
+        for o in cls.__dict__:
+            if o.startswith('__') and o not in ['__init__']:
+                continue
+            a = getattr(cls, o)
+            if hasattr(a, '__call__') and type(cls.__dict__[o]).__name__ == "python_selector":
+                if not ":" in a.__name__:
+                    func_name = "%s.%s" % (cls_name, o)
+                    trace.add(func_name)
+
+    @staticmethod
     def trace_lines(frame, event, arg):
         trace = TraceObject()
         co = frame.f_code
@@ -70,8 +98,11 @@ class TraceObject(object):
         filename = co.co_filename
         func_name = co.co_name
         line = linecache.getline(filename, lineno)
-        class_name = frame.f_locals['self'].__class__.__name__
-        print "TraceIt %s:%s:%3d: %s" % (class_name, func_name, lineno, line.rstrip())
+        cls = frame.f_locals.get('self', None)
+        class_name = frame.f_globals['__name__']
+        if cls:
+            class_name = frame.f_locals['self'].__class__.__name__
+        print "TraceIt(Line) %s:%s:%3d: %s" % (class_name, func_name, lineno, line.rstrip())
 
     @staticmethod
     def trace_calls(frame, event, arg):
@@ -81,8 +112,11 @@ class TraceObject(object):
         filename = co.co_filename
         func_name = co.co_name
         line = linecache.getline(filename, lineno)
-#        class_name = frame.f_locals['self'].__class__.__name__
-        print "TraceIt :%s:%3d: %s" % (func_name, lineno, line.rstrip())
+        cls = frame.f_locals.get('self', None)
+        class_name = frame.f_globals['__name__']
+        if cls:
+            class_name = frame.f_locals['self'].__class__.__name__
+        print "TraceIt(Call) %s:%s:%3d: %s" % (class_name, func_name, lineno, line.rstrip())
 
     @staticmethod
     def trace_exceptions(frame, event, arg):
@@ -100,25 +134,29 @@ class TraceObject(object):
 
     @staticmethod
     def traceIt(frame, event, arg):
-        trace = TraceObject()
-        filename = frame.f_code.co_filename
-        if filename not in trace.TRACE_FILES:
-            return
         try:
-            events = ['call', 'line', 'return', 'exception', 'c_call', 'c_return', 'c_exception']
+            trace = TraceObject()
             co = frame.f_code
+            filename = co.co_filename
+            func_name = co.co_name
             lineno = frame.f_lineno
-#            print filename, lineno, co.co_name, linecache.getline(filename, lineno)
+            prev_frame = frame.f_back
+            module = frame.f_globals['__name__']
+            klass = frame.f_locals.get('__self__', None)
+            if filename not in trace.TRACE_FILES:
+                return
+            events = ['call', 'line', 'return', 'exception', 'c_call', 'c_return', 'c_exception']
+#            print lineno, filename, module, func_name, klass
+
             if event == "line":
                 trace.trace_lines(frame, event, arg)
             if event == "call":
                 trace.trace_calls(frame, event, arg)
 #                if event == "exception":
 #                    trace.trace_exceptions(frame, event, arg)
+#            if event == "return":
+
         except Exception as e:
-            print filename
-            print co.co_name
-            print lineno
             import traceback
             print traceback.format_exc()
             print e
@@ -153,8 +191,7 @@ def Trace(*args, **kwargs):
                 # do not decorate static and class methonds
                 func_name = "%s.%s" % (cls.__name__, o)
                 TraceObject().addFile(inspect.getfile(cls))
-                print cls.__name__
-                TraceObject().add(cls.__name__)
+                TraceObject().addClass(cls.__name__)
                 TraceObject().add(func_name)
 #                da = _trace()(a)
 #                setattr(cls, o, da)
@@ -168,7 +205,7 @@ class LoggerObject(object):
         signal.signal(signal.SIGTERM, self.__class__.signal_handler)
         # tracing
         if traceit:
-            print self.__class__.__name__
+            print self.__class__.__name__, "in trace"
             sys.settrace(TraceObject().traceIt)
         else:
             sys.settrace(None)
@@ -178,8 +215,6 @@ class LoggerObject(object):
         self.logger.setLevel(logging.INFO)
         self._debug = False
         self.trace = TraceObject()
-#        print self.trace.TRACE_INTO
-#        print self.trace.TRACE_FILES
 
     def enableTrace(self):
         sys.settrace(TraceObject().traceIt)

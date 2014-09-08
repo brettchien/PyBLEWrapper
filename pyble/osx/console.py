@@ -106,7 +106,10 @@ class OSXCmd(cmd.Cmd, LoggerObject):
         return line
 
     def postcmd(self, stop, line):
-        self.stdout.flush()
+        try:
+            self.stdout.flush()
+        except:
+            pass
         self.registerKeyboardInterrupt() 
         return stop
 
@@ -154,6 +157,8 @@ class OSXCmd(cmd.Cmd, LoggerObject):
         output = ""
         try:
             output = eval(line)
+            output = pformat(output)
+            self.stdout.write(output + "\n")
         except NameError:
             cmd, args, line = self.parseline(line)
             self.commandNotFound(cmd)
@@ -162,9 +167,6 @@ class OSXCmd(cmd.Cmd, LoggerObject):
             self.commandNotFound(cmd)
         except Exception as e:
             self.stdout.write(pformat(e) + "\n")
-        if output and len(pformat(output)):
-            self.stdout.write(pformat(output) + "\n")
-        self.stdout.flush()
 
     def commandNotFound(self, cmd):
         self.stdout.write("Command: '%s' is not yet support by %s\n" % (cmd, self.__class__.__name__))

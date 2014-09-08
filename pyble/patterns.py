@@ -161,6 +161,10 @@ class TraceObject(object):
             print traceback.format_exc()
             print e
             return
+        try:
+            sys.stdout.flush()
+        except:
+            pass
         return trace.traceIt
 
 
@@ -200,7 +204,7 @@ def Trace(*args, **kwargs):
 
 
 class LoggerObject(object):
-    def __init__(self, traceit=True):
+    def __init__(self, traceit=False):
         # signal
         signal.signal(signal.SIGTERM, self.__class__.signal_handler)
         # tracing

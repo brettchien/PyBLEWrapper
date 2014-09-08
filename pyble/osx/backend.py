@@ -3,7 +3,7 @@ from objc import *
 from Foundation import *
 
 # CBCentralManager Bluetooth 4.0 worker
-from centralManager import OSXCentralManager
+from centralManager import OSXCentralManager, BLETimeoutError
 
 # HCI command
 from hci import OSXHCICommand
@@ -146,6 +146,7 @@ class OSXCentralManagerApp(OSXCmd):
 
         # init. CoreBluetooth Central Manager
         self.centralManager = OSXCentralManager.alloc().init()
+
         # register callbacks
         self.centralManager.setBLEReadyCallback(self._setReady)
         self.centralManager.setBLEAvailableListCallback(self._updateAvailableList)
@@ -230,7 +231,29 @@ class OSXCentralManagerApp(OSXCmd):
     def do_scan(self, args):
         """Scan available peripherals 
         """
-        self.hciTool.startScan()
+        seconds = 3
+        num = 1
+        args = args.strip()
+        args = args.split()
+        nargs = len(args)
+        if nargs == 1:
+            try:
+                seconds = int(args[0])
+            except:
+                pass
+        elif nargs == 2:
+            try:
+                seconds = int(args[0])
+                bum = int(args[1])
+            except:
+                pass
+        else:
+            pass
+
+        try:
+            self.centralManager.startScan(timeout=seconds, numOfPeripherals=num)
+        except BLETimeoutError as e:
+            print e
 
     def do_stop(self, args):
         """Stop scan command
@@ -323,7 +346,6 @@ class OSXCentralManagerApp(OSXCmd):
 
     def halt(self):
         self.stop.set()
-
 
 if __name__ == "__main__":
     app = OSXCentralManagerApp(shell=True)

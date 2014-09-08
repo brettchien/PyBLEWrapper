@@ -10,8 +10,16 @@ logger = logging.getLogger(__name__)
 
 import uuid
 from util import CBUUID2String
-import time
+from datetime import datetime, timedelta
 from pyble.patterns import Trace
+from threading import Condition
+from functools import wraps
+
+class BLETimeoutError(Exception):
+    def __init__(self, message=""):
+        Exception.__init__(self, message)
+        self.message = message
+
 
 @Trace
 class OSXCentralManager(NSObject, Central):
@@ -41,7 +49,44 @@ class OSXCentralManager(NSObject, Central):
         self.BLEReady_callback = None
         self.BLEAvailableList_callback = None
         self.BLEConnectedList_callback = None
+
+        self.cv = Condition()
+        self.read = False
+        self.wait4Startup()
+
         return self
+
+    # decorators for condition variables
+    def _waitResp(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            with self.cv:
+                self.ready = False
+                ret = func(self, *args, **kwargs)
+                while True:
+                    self.cv.wait(0)
+                    NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
+                    if self.ready:
+                        break
+                return ret
+        return wrapper
+
+    def _notifyResp(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            ret = func(self, *args, **kwargs)
+            self.ready = True
+            with self.cv:
+                try:
+                    self.cv.notifyAll()
+                except Exception as e:
+                    print e
+            return ret
+        return wrapper
+
+    @_waitResp
+    def wait4Startup(self):
+        self.logger.debug("Waiting CentralManager to be ready ...")
 
     def setBLEReadyCallback(self, func):
         self.BLEReady_callback = func
@@ -69,7 +114,7 @@ class OSXCentralManager(NSObject, Central):
     def stop(self):
         self.logger.debug("Cleaning Up")
 
-    def startScan(self, allowDuplicates=False):
+    def startScan(self, timeout=5, numOfPeripherals=1, allowDuplicates=False):
         self.logger.debug("Start Scan")
 
         if len(self.scanedList):
@@ -86,6 +131,16 @@ class OSXCentralManager(NSObject, Central):
         )
         self.manager.scanForPeripheralsWithServices_options_(nil, options)
 
+        startTime = datetime.now()
+        with self.cv:
+            while True:
+                self.cv.wait(0.1)
+                NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
+                if datetime.now() - startTime > timedelta(seconds=timeout):
+                    raise BLETimeoutError("Scan timeout!!")
+                if len(self.scanedList) >= numOfPeripherals:
+                    break
+ 
     def stopScan(self):
         self.logger.debug("Stop Scan")
         self.manager.stopScan()
@@ -96,6 +151,7 @@ class OSXCentralManager(NSObject, Central):
     def getConnectedList(self):
         return self.connectedList
 
+    @_waitResp
     def connectPeripheral(self, peripheral):
         self.logger.debug("Connecting to Peripheral: " + str(peripheral))
         options = NSDictionary.dictionaryWithObject_forKey_(
@@ -130,6 +186,7 @@ class OSXCentralManager(NSObject, Central):
     def centralManager_didConnectPeripheral_(self, central, peripheral):
         self.didConnectPeripheral(central, peripheral)
 
+    @_notifyResp
     def didConnectPeripheral(self, central, peripheral):
         self.logger.debug("Peripheral %s (%s) is connected" %
                           (peripheral._.name, peripheral._.identifier.UUIDString())
@@ -163,6 +220,7 @@ class OSXCentralManager(NSObject, Central):
     def centralManager_didFailToConnectPeripheral_error_(self, central, peripheral, error):
         self.didFailtoConnectPeripheral(central, peripheral, error)
 
+    @_notifyResp
     def didFailtoConnectPeripheral(self, central, peripheral, error):
         self.logger.debug("Fail to connect Peripheral %s" % peripheral._.name)
         p = self.findPeripheralFromList(peripheral, self.scanedList)
@@ -175,6 +233,7 @@ class OSXCentralManager(NSObject, Central):
     def centralManager_didDiscoverPeripheral_advertisementData_RSSI_(self, central, peripheral, advertisementData, rssi):
         self.didDiscoverPeripheral(central, peripheral, advertisementData, rssi)
 
+    @_notifyResp
     def didDiscoverPeripheral(self, central, peripheral, advertisementData, rssi):
         temp = OSXPeripheral.alloc().init()
         idx = -1
@@ -236,8 +295,8 @@ class OSXCentralManager(NSObject, Central):
             self.logger.info("RSSI: %d", rssi)
             self.logger.info("UUID: %s", peripheral._.identifier.UUIDString())
             self.logger.info("State: %s", peripheral._.state)
-            # update lists
-            self.updateAvailableList()
+        # update lists
+        self.updateAvailableList()
 
     def centralManager_didRetrieveConnectedPeripherals_(self, central, peripherals):
         self.logger.debug("didRetrieveConnectedPeripherals")
@@ -249,6 +308,7 @@ class OSXCentralManager(NSObject, Central):
     def centralManagerDidUpdateState_(self, central):
         self.didUpdateState(central)
 
+    @_notifyResp
     def didUpdateState(self, central):
         ble_state = central._.state
         if ble_state == CBCentralManagerStateUnkown:

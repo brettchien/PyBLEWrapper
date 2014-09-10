@@ -20,6 +20,10 @@ class BLETimeoutError(Exception):
         Exception.__init__(self, message)
         self.message = message
 
+class BLECentralManagerStateError(Exception):
+    def __init__(self, message=""):
+        Exception.__init__(self, message)
+        self.message = message
 
 @Trace
 class OSXCentralManager(NSObject, Central):
@@ -51,7 +55,7 @@ class OSXCentralManager(NSObject, Central):
         self.BLEConnectedList_callback = None
 
         self.cv = Condition()
-        self.read = False
+        self.ready = False
         self.wait4Startup()
 
         return self
@@ -136,10 +140,11 @@ class OSXCentralManager(NSObject, Central):
             while True:
                 self.cv.wait(0.1)
                 NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
-                if datetime.now() - startTime > timedelta(seconds=timeout):
+                if timeout > 0 and datetime.now() - startTime > timedelta(seconds=timeout):
                     self.stopScan()
-                    raise BLETimeoutError("Scan timeout!!")
-                if len(self.scanedList) >= numOfPeripherals:
+                    raise BLETimeoutError("Scan timeout after %s seconds!!" % timeout)
+                if numOfPeripherals > 0 and len(self.scanedList) >= numOfPeripherals:
+                    self.logger.info("Found %s peripherals." % len(self.scanedList))
                     break
         self.stopScan()
  
@@ -152,6 +157,50 @@ class OSXCentralManager(NSObject, Central):
 
     def getConnectedList(self):
         return self.connectedList
+
+    @_waitResp
+    def retrieveConnectedPeripherals(self):
+        self.logger.info("Deprecated in OSX v10.9.")
+        return 
+#        self.manager.retrieveConnectedPeripherals()
+
+    def retrieveConnectedPeripheralsWithServices(self, services):
+        if not isinstance(services, list) and isinstance(services, str):
+            services = list(services.split())
+        known_services = NSMutableArray.alloc().init()
+        for service in services:
+            UUID = CBUUID.UUIDWithString_(service)
+            if UUID is not nil:
+                known_services.addObject_(UUID)
+        peripherals = self.manager.retrieveConnectedPeripheralsWithServices_(known_services)
+        for p in peripherals:
+            if not self.findPeripheralFromList(p, self.scanedList):
+                temp = OSXPeripheral.alloc().init()
+                temp.instance = p
+                temp.UUID = uuid.UUID(p._.identifier.UUIDString())
+                temp.name=p._.name
+                self.scanedList.append(temp)
+        # update lists
+        self.updateAvailableList()
+
+    def retrievePeriphersWithIdentifiers(self, identifiers):
+        if not isinstance(identifiers, list) and isinstance(identifiers, str):
+            identifiers = list(identifiers.split())
+        known_identifiers = NSMutableArray.alloc().init()
+        for identifier in identifiers:
+            UUID = NSUUID.alloc().UUIDWithString_(identifer)
+            if UUID is not nil:
+                known_identifiers.addObject_(UUID)
+        peripherals = self.manager.retrievePeripheralsWithIdentifiers_(known_identifiers)
+        for p in peripherals:
+            if not self.findPeripheralFromList(p, self.scanedList):
+                temp = OSXPeripheral.alloc().init()
+                temp.instance = p
+                temp.UUID = uuid.UUID(p._.identifier.UUIDString())
+                temp.name=p._.name
+                self.scanedList.append(temp)
+        # update lists
+        self.updateAvailableList()
 
     @_waitResp
     def connectPeripheral(self, peripheral):
@@ -168,6 +217,7 @@ class OSXCentralManager(NSObject, Central):
         for p in self.connectedList:
             self.disconnectPeripheral(p)
 
+    @_waitResp
     def disconnectPeripheral(self, peripheral):
         self.logger.debug("Disconnecting Peripheral: " + str(peripheral))
         self.manager.cancelPeripheralConnection_(peripheral.instance)
@@ -190,7 +240,7 @@ class OSXCentralManager(NSObject, Central):
 
     @_notifyResp
     def didConnectPeripheral(self, central, peripheral):
-        self.logger.debug("Peripheral %s (%s) is connected" %
+        self.logger.info("Peripheral %s (%s) is connected" %
                           (peripheral._.name, peripheral._.identifier.UUIDString())
                           )
         p = self.findPeripheralFromList(peripheral, self.scanedList)
@@ -208,8 +258,9 @@ class OSXCentralManager(NSObject, Central):
     def centralManager_didDisconnectPeripheral_error_(self, central, peripheral, error):
         self.didDisconnectPeripheral(central, peripheral, error)
 
+    @_notifyResp
     def didDisconnectPeripheral(self, central, peripheral, error):
-        self.logger.debug("Peripheral %s disconnected" % peripheral._.name)
+        self.logger.info("Peripheral %s is disconnected" % peripheral._.name)
         p = self.findPeripheralFromList(peripheral, self.connectedList)
         if p:
             p.state = Peripheral.DISCONNECTED
@@ -301,10 +352,18 @@ class OSXCentralManager(NSObject, Central):
         self.updateAvailableList()
 
     def centralManager_didRetrieveConnectedPeripherals_(self, central, peripherals):
-        self.logger.debug("didRetrieveConnectedPeripherals")
+        self.didRetrieveConnectedPeripherals(central, peripherals)
+
+    @_notifyResp
+    def didRetrieveConnectedPeripherals(self, central, peripherals):
+        self.logger.info("Deprecated in OSX v10.9.")
+        return 
+        self.logger.info("didRetrieveConnectedPeripherals")
+        for p in peripherals:
+            print p
 
     def centralManager_didRetrievePeripherals_(self, central, peripherals):
-        self.logger.debug("didRetrievePeripherals")
+        self.logger.info("didRetrievePeripherals")
 
     # Monitoring Changes to the Central Manager's State
     def centralManagerDidUpdateState_(self, central):

@@ -149,24 +149,35 @@ class OSXCmd(cmd.Cmd, LoggerObject):
             self.do_eval(line)
 
     def do_eval(self, args):
-        """Evaluate python statement
+        """Evaluate a single line python statement
         """
         line = args.strip()
         if len(line) == 0:
             return
         output = ""
+        oldstdout = self.stdout
+        from StringIO import StringIO
+        import ast
+        buffer = StringIO()
+        self.stdout = buffer
         try:
-            output = eval(line)
-            output = pformat(output)
-            self.stdout.write(output + "\n")
-        except NameError:
+            code = compile(line, "<string>", "single")
+            exec(code)
+        except NameError as e:
+            self.logger.debug(e)
             cmd, args, line = self.parseline(line)
             self.commandNotFound(cmd)
-        except SyntaxError:
+        except SyntaxError as e:
+            self.logger.debug(e)
             cmd, args, line = self.parseline(line)
             self.commandNotFound(cmd)
         except Exception as e:
+            self.logger.debug(e)
             self.stdout.write(pformat(e) + "\n")
+        finally:
+            self.stdout = oldstdout
+            self.stdout.write(buffer.getvalue())
+
 
     def commandNotFound(self, cmd):
         self.stdout.write("Command: '%s' is not yet support by %s\n" % (cmd, self.__class__.__name__))

@@ -137,9 +137,11 @@ class OSXCentralManager(NSObject, Central):
                 self.cv.wait(0.1)
                 NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
                 if datetime.now() - startTime > timedelta(seconds=timeout):
+                    self.stopScan()
                     raise BLETimeoutError("Scan timeout!!")
                 if len(self.scanedList) >= numOfPeripherals:
                     break
+        self.stopScan()
  
     def stopScan(self):
         self.logger.debug("Stop Scan")

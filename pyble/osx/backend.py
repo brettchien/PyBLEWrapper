@@ -10,6 +10,7 @@ import logging
 
 from console import OSXCmd
 import os
+from util import readDeviceInfo
 from pprint import pformat
 
 try:
@@ -140,6 +141,9 @@ class OSXCentralManagerApp(OSXCmd):
             super(OSXCentralManagerApp, self).__init__()
         atexit.register(self.exitApp, self)
         self.prompt = "EcoBLE $ "
+        # read host BLE info
+        self.dongle = readDeviceInfo()
+        self.prompt = "EcoBLE(%s) $ " % self.dongle.MACAddress
 
         # init. CoreBluetooth Central Manager
         self.centralManager = OSXCentralManager.alloc().init()
@@ -218,9 +222,8 @@ class OSXCentralManagerApp(OSXCmd):
     def do_exit(self, args):
         """ Exit Program
         """
-        if len(self.connectedPeripherals):
+        if hasattr(self, 'connectedPeripherals') and len(self.connectedPeripherals):
             self.do_disconnectAll("")
-        self.halt()
         return True
 
     def do_scan(self, args):

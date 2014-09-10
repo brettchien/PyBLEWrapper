@@ -27,6 +27,9 @@ class OSXPeripheral(NSObject, Peripheral):
 
     CBPeripheral calss Reference:
     https://developer.apple.com/librarY/mac/documentation/CoreBluetooth/Reference/CBPeripheral_Class/translated_content/CBPeripheral.html
+
+    CBPeripheralDelegate Protocol Reference:
+    https://developer.apple.com/library/ios/documentation/CoreBluetooth/Reference/CBPeripheralDelegate_Protocol/translated_content/CBPeripheralDelegate.html
     """
     def init(self):
         Peripheral.__init__(self)
@@ -309,7 +312,7 @@ class OSXPeripheral(NSObject, Peripheral):
 
     # Monitoring Changes to a Peripheral's Name or Services
     def peripheralDidUpdateName_(self, peripheral):
-        self.logger.debug("%s updated name " % self)
+        self.logger.info("%s updated name " % self)
         self.name = peripheral._.name
 
     def peripheral_didModifyServices_(self, peripheral, invalidatedServices):

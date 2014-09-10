@@ -5,9 +5,6 @@ from Foundation import *
 # CBCentralManager Bluetooth 4.0 worker
 from centralManager import OSXCentralManager, BLETimeoutError
 
-# HCI command
-from hci import OSXHCICommand
-
 from threading import Thread, Event
 import logging
 
@@ -157,8 +154,6 @@ class OSXCentralManagerApp(OSXCmd):
         self.stop.clear()
         self.ready = False
 
-        self.hciTool = OSXHCICommand(self.centralManager)
-
         self.shell = shell
         self.inq = None
         self.outq = None
@@ -224,7 +219,7 @@ class OSXCentralManagerApp(OSXCmd):
         """ Exit Program
         """
         if len(self.connectedPeripherals):
-            self.hciTool.disconnectAll()
+            self.do_disconnectAll("")
         self.halt()
         return True
 
@@ -244,7 +239,7 @@ class OSXCentralManagerApp(OSXCmd):
         elif nargs == 2:
             try:
                 seconds = int(args[0])
-                bum = int(args[1])
+                num = int(args[1])
             except:
                 pass
         else:
@@ -258,30 +253,26 @@ class OSXCentralManagerApp(OSXCmd):
     def do_stop(self, args):
         """Stop scan command
         """
-        self.hciTool.stopScan()
-
-    def do_test(self, args):
-        raise NameError
+        self.centralManager.stopScan()
 
     def do_list(self, args):
-        """List available peripherals
+        """List available and connected peripherals
         """
         count = 0
-        ans = ""
+        ans = "== Avaialbe Peripherals ==\n"
+        if not len(self.availablePeripherals):
+            ans += "None\n"
         for p in self.availablePeripherals:
             ans += "%2d : %s\n" % (count, p.name)
             ans += "     RSSI         : %d\n" % p.rssi
             ans += "     TxPowerLevel : %d\n" % p.advTxPowerLevel
             ans += "     Service UUIDs: %s\n" % pformat(p.advServiceUUIDs)
             count += 1
-        self.stdout.write(ans)
-        self.stdout.flush()
-
-    def do_con(self, args):
-        """List connected peripherals
-        """
+        ans += "\n"
         count = 0
-        ans = ""
+        ans += "== Connected Peripherals ==\n"
+        if not len(self.connectedPeripherals):
+            ans += "None\n"
         for p in self.connectedPeripherals:
             ans += "%2d : %s\n" % (count, p.name)
             ans += "     RSSI         : %d\n" % p.rssi
@@ -315,9 +306,9 @@ class OSXCentralManagerApp(OSXCmd):
         except:
             pass
         if pid == None and len(self.availablePeripherals):
-            self.hciTool.connect(self.availablePeripherals[0])
+            self.centralManager.connectPeripheral(self.availablePeripherals[0])
         if pid != None and pid < len(self.availablePeripherals):
-            self.hciTool.connect(self.availablePeripherals[pid])
+            self.centralManager.connectPeripheral(self.availablePeripherals[pid])
 
     def do_disconnect(self, args):
         """Disconnect a connected peripheral
@@ -328,21 +319,27 @@ class OSXCentralManagerApp(OSXCmd):
         except:
             pass
         if pid == None and len(self.connectedPeripherals):
-            self.hciTool.disconnect(self.connectedPeripherals[0])
+            self.centralManager.disconnectPeripheral(self.connectedPeripherals[0])
         if pid != None and pid < len(self.connectedPeripherals):
-            self.hciTool.disconnect(self.connectedPeripherals[pid])
+            self.centralManager.disconnectPeripheral(self.connectedPeripherals[pid])
 
     def do_connectAll(self, args):
         """Connect all available peripherals
         """
         if len(self.availablePeripherals):
             for p in self.availablePeripherals:
-                self.hciTool.connect(p)
+                self.centralManager.connectPeripheral(p)
 
     def do_disconnectAll(self, args):
         """Disconnect all connected peripherals
         """
-        self.hciTool.disconnectAll()
+        if len(self.connectedPeripherals):
+            for p in self.connectedPeripherals:
+                self.centralManager.disconnectPeripheral(p)
+
+    def do_test(self, args):
+#        self.centralManager.retrieveConnectedPeripherals()
+        self.centralManager.retrieveConnectedPeripheralsWithServices(["FFF0"])
 
     def halt(self):
         self.stop.set()

@@ -20,7 +20,7 @@ except:
 
 logger = logging.getLogger(__name__)
 
-from pyble.roles import Peripheral
+import pyble
 from pyble.patterns import LoggerObject, Trace, TraceObject
 
 import atexit
@@ -52,7 +52,7 @@ class OSXPeripheralApp(OSXCmd):
 
     def _update_state(self, state):
         if state == Peripheral.DISCONNECTED:
-            self.stdout.write("Peripheral disconnected, exit ...")
+            self.stdout.write("Peripheral disconnected, exit ...\n")
             self.stdout.flush()
             self.endloop()
 
@@ -342,7 +342,8 @@ class OSXCentralManagerApp(OSXCmd):
 
     def do_test(self, args):
 #        self.centralManager.retrieveConnectedPeripherals()
-        self.centralManager.retrieveConnectedPeripheralsWithServices(["FFF0"])
+#        self.centralManager.retrieveConnectedPeripheralsWithServices(["FFF0"])
+        pass
 
     def halt(self):
         self.stop.set()

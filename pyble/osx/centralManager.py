@@ -2,8 +2,8 @@ from objc import *
 from Foundation import *
 from IOBluetooth import *
 
+from pyble._roles import Central, Peripheral
 from peripheral import OSXPeripheral
-from pyble.roles import Peripheral, Central
 
 import logging
 logger = logging.getLogger(__name__)
@@ -48,6 +48,7 @@ class OSXCentralManager(NSObject, Central):
         # initialize manager with delegate
         self.logger.info("Initialize CBCentralManager")
         self.manager = CBCentralManager.alloc().initWithDelegate_queue_(self, nil)
+
         self.scanedList = []
         self.connectedList = []
         self.BLEReady_callback = None
@@ -147,6 +148,11 @@ class OSXCentralManager(NSObject, Central):
                     self.logger.info("Found %s peripherals." % len(self.scanedList))
                     break
         self.stopScan()
+
+        # return the first found peripheral
+        if len(self.scanedList):
+            return self.scanedList[0]
+        return None
  
     def stopScan(self):
         self.logger.debug("Stop Scan")
@@ -202,16 +208,28 @@ class OSXCentralManager(NSObject, Central):
         # update lists
         self.updateAvailableList()
 
-    @_waitResp
     def connectPeripheral(self, peripheral):
-        self.logger.debug("Connecting to Peripheral: " + str(peripheral))
-        options = NSDictionary.dictionaryWithObject_forKey_(
-            NSNumber.numberWithBool_(YES),
-            CBConnectPeripheralOptionNotifyOnDisconnectionKey
-        )
-        peripheral.state = Peripheral.CONNECTING
-        self.manager.connectPeripheral_options_(peripheral.instance, options)
+        with self.cv:
+            self.ready = False
+            self.logger.debug("Connecting to Peripheral: " + str(peripheral))
+            options = NSDictionary.dictionaryWithObject_forKey_(
+                        NSNumber.numberWithBool_(YES),
+                        CBConnectPeripheralOptionNotifyOnDisconnectionKey
+                      )
+            peripheral.state = Peripheral.CONNECTING
+            self.manager.connectPeripheral_options_(peripheral.instance, options)
 
+            while True:
+                self.cv.wait(0)
+                NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
+                if self.ready == True:
+                    break
+
+        # return the newly added peripheral
+        if peripheral in self.connectedList:
+            return peripheral
+        return None
+ 
     def disconnectAllPeripherals(self):
         self.logger.debug("Disconnecting all Peripherals")
         for p in self.connectedList:
@@ -247,10 +265,10 @@ class OSXCentralManager(NSObject, Central):
         if p:
             if p not in self.connectedList:
                 self.connectedList.append(p)
-            if p in self.scanedList:
-                self.scanedList.remove(p)
+            self.scanedList.remove(p)
             # update peripheral state
             p.state = Peripheral.CONNECTED
+
         # update lists
         self.updateAvailableList()
         self.updateConnectedList()
@@ -265,8 +283,8 @@ class OSXCentralManager(NSObject, Central):
         if p:
             p.state = Peripheral.DISCONNECTED
             self.connectedList.remove(p)
-            if p in self.scanedList:
-                self.scanedList.remove(p)
+            if p not in self.scanedList:
+                self.scanedList.append(p)
         # update lists
         self.updateConnectedList()
 
@@ -301,9 +319,10 @@ class OSXCentralManager(NSObject, Central):
             p = self.scanedList[idx]
         else:
             p = temp
+
         p.instance = peripheral
         p.UUID = uuid.UUID(peripheral._.identifier.UUIDString())
-        p.name=peripheral._.name
+        p.name = peripheral._.name
         # handle advertisement data
         #   local name
         if CBAdvertisementDataLocalNameKey in advertisementData:
@@ -348,6 +367,7 @@ class OSXCentralManager(NSObject, Central):
             self.logger.info("RSSI: %d", rssi)
             self.logger.info("UUID: %s", peripheral._.identifier.UUIDString())
             self.logger.info("State: %s", peripheral._.state)
+
         # update lists
         self.updateAvailableList()
 

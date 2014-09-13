@@ -1,7 +1,6 @@
 import platform
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 def load(shell=False):

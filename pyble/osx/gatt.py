@@ -1,6 +1,6 @@
 from objc import *
 
-from pyble.gatt import Service, Characteristic, Descriptor
+from pyble._gatt import Service, Characteristic, Descriptor
 from util import CBUUID2String
 
 import uuid
@@ -14,12 +14,19 @@ from pyble.patterns import Trace
 
 @Trace
 class OSXBLEService(Service):
-    def __init__(self, peripheral, instance):
+    def __init__(self, peripheral=None, instance=None):
         try:
             super().__init__()
         except:
             super(OSXBLEService, self).__init__()
+        # which peripheral own this service
         self.instance = instance
+        self.peripheral = peripheral
+        self.UUID = ""
+        self.isPrimary = False
+        if not instance:
+            return
+
         uuidBytes = instance._.UUID._.data
         if len(uuidBytes) == 2:
             self.name = str(instance._.UUID)
@@ -32,8 +39,6 @@ class OSXBLEService(Service):
             # invalid UUID size
             pass
         self.isPrimary = (instance._.isPrimary == YES)
-        # which peripheral own this service
-        self.peripheral = peripheral
 
     @property
     def characteristicUUIDs(self):
@@ -75,24 +80,11 @@ class OSXBLEService(Service):
         return None
 
 class OSXBLECharacteristic(Characteristic):
-    def __init__(self, service, instance):
+    def __init__(self, service=None, instance=None):
         try:
             super().__init__()
         except:
             super(OSXBLECharacteristic, self).__init__()
-        self.service = service
-        uuidBytes = instance._.UUID._.data
-        if len(uuidBytes) == 2:
-            self.name = str(instance._.UUID)
-            if self.name.startswith("Unknown"):
-                self.name = "UNKNOWN"
-            self.UUID = CBUUID2String(uuidBytes)
-        elif len(uuidBytes) == 16:
-            self.UUID = uuid.UUID(bytes=uuidBytes)
-        else:
-            # invalid UUID size
-            pass
-
         self._description = ""
         self.properties = {
             "broadcast": False,                 # 0x0001
@@ -106,9 +98,25 @@ class OSXBLECharacteristic(Characteristic):
             "notifyEncryptionRequired": False,  # 0x0100
             "indicateEncryptionRequired": False # 0x0200
         }
+        self._instance = instance
+        self.service = service
+        self.UUID = ""
+        if not self._instance:
+            return
 
         # update basic info
-        self.instance = instance
+        self.instnace = instance
+        uuidBytes = instance._.UUID._.data
+        if len(uuidBytes) == 2:
+            self.name = str(instance._.UUID)
+            if self.name.startswith("Unknown"):
+                self.name = "UNKNOWN"
+            self.UUID = CBUUID2String(uuidBytes)
+        elif len(uuidBytes) == 16:
+            self.UUID = uuid.UUID(bytes=uuidBytes)
+        else:
+            # invalid UUID size
+            pass
 
     # callbacks
     def _update_userdescription(self, description):
@@ -203,12 +211,19 @@ class OSXBLECharacteristic(Characteristic):
             self.properties["indicateEncryptionRequired"] = True
 
 class OSXBLEDescriptor(Descriptor):
-    def __init__(self, characteristic, instance):
+    def __init__(self, characteristic=None, instance=None):
         try:
             super().__init__()
         except:
             super(OSXBLEDescriptor, self).__init__()
+        self.characteristic = characteristic
         self.instance = instance
+        self.UUID = ""
+        self._value = None
+        # callback
+        self.update_userdescription = None
+        if not self.instance:
+            return
         uuidBytes = instance._.UUID._.data
         if len(uuidBytes) == 2:
             self.name = str(instance._.UUID)
@@ -220,11 +235,6 @@ class OSXBLEDescriptor(Descriptor):
         else:
             # invalid UUID size
             pass
-        self.characteristic = characteristic
-        self._value = None
-
-        # callback
-        self.update_userdescription = None
 
     # register callbacks
     def setDescriptorUserDescriptionCallback(self, func):

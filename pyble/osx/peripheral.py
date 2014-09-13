@@ -2,7 +2,7 @@ from Foundation import *
 from IOBluetooth import *
 from objc import *
 
-from pyble.roles import Peripheral
+from pyble._roles import Peripheral
 from gatt import OSXBLEService, OSXBLECharacteristic, OSXBLEDescriptor
 from util import CBUUID2String
 
@@ -35,8 +35,11 @@ class OSXPeripheral(NSObject, Peripheral):
         Peripheral.__init__(self)
         self.trace.traceInstance(self)
 
+        self.instance = None
+
         self.cv = Condition()
         self.ready = False
+        self.state = Peripheral.DISCONNECTED
 
         # advertisement data
         self.advLocalName = None
@@ -51,8 +54,12 @@ class OSXPeripheral(NSObject, Peripheral):
         return self
 
     @property
+    def isConnected(self):
+        return self.state == Peripheral.CONNECTED
+
+    @property
     def services(self):
-        if len(self._services) == 0:
+        if len(self._services) == 0 and self.instance:
             self.discoverServices()
         return self._services
 

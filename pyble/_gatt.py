@@ -3,11 +3,16 @@ import logging
 import pkgutil
 import profile
 from patterns import LoggerObject
+from handlers import ProfileHandler
 
 logger = logging.getLogger(__name__)
 
 class Service(LoggerObject):
     def __init__(self):
+        try:
+            super().__init__()
+        except:
+            super(Service, self).__init__()
         self.name = "UNKNOWN"
         self.UUID = ""
         self.isPrimary = False
@@ -70,11 +75,17 @@ class Profile(Service):
     pass
 
 class Characteristic(LoggerObject):
-    def __init__(self):
+    def __init__(self, service=None, profile=None):
+        try:
+            super().__init__()
+        except:
+            super(Characteristic, self).__init__()
         self.name = "UNKNOWN"
         self.UUID = ""
         self.descriptors = []
         self.description = ""
+        self.service = service
+        self.profile = profile
         self.isNotifying = False
         self.isBroadcasted = False
         self._value = None
@@ -108,6 +119,10 @@ class Characteristic(LoggerObject):
 
 class Descriptor(LoggerObject):
     def __init__(self):
+        try:
+            super().__init__()
+        except:
+            super(Descriptor, self).__init__()
         self.name = "UNKNOWN"
         self.UUID = ""
         self.value = None

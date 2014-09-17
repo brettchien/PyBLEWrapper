@@ -1,5 +1,6 @@
 import logging
 from patterns import LoggerObject
+from handlers import PeripheralHandler
 
 class Peripheral(LoggerObject):
     DISCONNECTED = 0

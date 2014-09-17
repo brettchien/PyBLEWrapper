@@ -11,6 +11,7 @@ import struct
 logger = logging.getLogger(__name__)
 
 from pyble.patterns import Trace
+from pyble.handlers import ProfileHandler
 
 @Trace
 class OSXBLEService(Service):
@@ -60,13 +61,6 @@ class OSXBLEService(Service):
             self.peripheral.discoverCharacteristicsForService(self.instance)
         return iter(self.characteristics)
 
-    def show(self):
-        print self
-        for c in self.characteristics:
-            print "  " + str(c)
-            print "    Description: %s" % (str(c.description))
-            print "    Value      : ", pformat(c.value)
-
     def findCharacteristicByInstance(self, instance):
         for c in self.characteristics:
             if str(c.UUID) == CBUUID2String(instance._.UUID._.data):
@@ -80,11 +74,11 @@ class OSXBLEService(Service):
         return None
 
 class OSXBLECharacteristic(Characteristic):
-    def __init__(self, service=None, instance=None):
+    def __init__(self, service=None, profile=None, instance=None):
         try:
-            super().__init__()
+            super().__init__(service=service, profile=profile)
         except:
-            super(OSXBLECharacteristic, self).__init__()
+            super(OSXBLECharacteristic, self).__init__(service=service, profile=profile)
         self._description = ""
         self.properties = {
             "broadcast": False,                 # 0x0001
@@ -98,14 +92,15 @@ class OSXBLECharacteristic(Characteristic):
             "notifyEncryptionRequired": False,  # 0x0100
             "indicateEncryptionRequired": False # 0x0200
         }
-        self._instance = instance
+        self._instance = None
         self.service = service
+        self.profile = profile
         self.UUID = ""
-        if not self._instance:
+        if not instance:
             return
 
         # update basic info
-        self.instnace = instance
+        self.instance = instance
         uuidBytes = instance._.UUID._.data
         if len(uuidBytes) == 2:
             self.name = str(instance._.UUID)
@@ -165,8 +160,19 @@ class OSXBLECharacteristic(Characteristic):
 
     @value.setter
     def value(self, data):
-        self._value = data
-        # notify callback
+        handler = None
+        if self.service and self.service.peripheral.delegate:
+            handler = self.service.peripheral.delegate.profile_handlers[self.profile.UUID]
+            
+        else:
+            if self.profile:
+                handler = ProfileHandler[self.profile.UUID]
+        if handler:
+            ret = handler.on_read(self, data)
+            if ret:
+                self._value = ret
+        else:
+            self._value = data
 
     @property
     def description(self):
@@ -222,8 +228,9 @@ class OSXBLEDescriptor(Descriptor):
         self._value = None
         # callback
         self.update_userdescription = None
-        if not self.instance:
+        if not instance:
             return
+
         uuidBytes = instance._.UUID._.data
         if len(uuidBytes) == 2:
             self.name = str(instance._.UUID)
@@ -283,5 +290,4 @@ class OSXBLEDescriptor(Descriptor):
 
     def __str__(self):
         return self.__repr__()
-
 

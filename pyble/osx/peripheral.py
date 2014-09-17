@@ -199,7 +199,7 @@ class OSXPeripheral(NSObject, Peripheral):
         if peripheral._.services:
             self.logger.debug("%s discovered services" % self)
             for service in peripheral._.services:
-                s = OSXBLEService(self, service)
+                s = OSXBLEService(peripheral=self, instance=service)
                 self._services.append(s)
 
     def peripheral_didDiscoverIncludeServicesForService_error_(self, peripheral, service, error):
@@ -218,7 +218,7 @@ class OSXPeripheral(NSObject, Peripheral):
         p = s.peripheral
         self.logger.debug("%s:%s discovered characteristics" % (p, s))
         for c in service._.characteristics:
-            characteristic = OSXBLECharacteristic(s, c)
+            characteristic = OSXBLECharacteristic(service=s, profile=s, instance=c)
             s.addCharacteristic(characteristic)
 
     def peripheral_didDiscoverDescriptorsForCharacteristic_error_(self, peripheral, characteristic, error):
@@ -231,7 +231,7 @@ class OSXPeripheral(NSObject, Peripheral):
         c = s.findCharacteristicByInstance(characteristic)
         self.logger.debug("%s:%s:%s discovered descriptors" % (p, s, c))
         for d in characteristic._.descriptors:
-            descriptor = OSXBLEDescriptor(c, d)
+            descriptor = OSXBLEDescriptor(characteristic=c, instance=d)
             c.addDescriptor(descriptor)
 
     # Retrieving Characteristic and characteristic Descriptor Values

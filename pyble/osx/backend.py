@@ -110,8 +110,7 @@ class OSXPeripheralApp(OSXCmd):
             cUUID = arglist[1]
             profile = self.p[pUUID]
             char = self.p[pUUID][cUUID]
-
-            print char, char.value
+            print char, ":", char.value
         else:
             self.help_read()
 

@@ -24,6 +24,20 @@ class Peripheral(LoggerObject):
         self.update_state_callback = None
         self.update_rssi_callback = None
 
+        self._delegate = None
+
+    @property
+    def delegate(self):
+        if self._delegate:
+            return self._delegate.__class__
+        else:
+            return None
+
+    @delegate.setter
+    def delegate(self, handler_cls):
+        self._delegate = handler_cls(self.UUID)
+
+
     @property
     def rssi(self):
         return self._rssi
@@ -57,6 +71,9 @@ class Peripheral(LoggerObject):
             self._serviceUUIDs = value[:]
         except:
             pass
+
+    def __iter__(self):
+        return iter(self.services)
 
     def __getitem__(self, key):
         key = key.upper()

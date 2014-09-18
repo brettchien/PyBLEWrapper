@@ -119,7 +119,7 @@ class OSXCentralManager(NSObject, Central):
     def stop(self):
         self.logger.debug("Cleaning Up")
 
-    def startScan(self, timeout=5, numOfPeripherals=1, allowDuplicates=False):
+    def startScan(self, withServices=[], timeout=5, numOfPeripherals=1, allowDuplicates=False):
         self.logger.debug("Start Scan")
 
         if len(self.scanedList):
@@ -144,9 +144,19 @@ class OSXCentralManager(NSObject, Central):
                 if timeout > 0 and datetime.now() - startTime > timedelta(seconds=timeout):
                     self.stopScan()
                     raise BLETimeoutError("Scan timeout after %s seconds!!" % timeout)
-                if numOfPeripherals > 0 and len(self.scanedList) >= numOfPeripherals:
-                    self.logger.info("Found %s peripherals." % len(self.scanedList))
-                    break
+                if len(withServices):
+                    if len(self.scanedList):
+                        count = 0
+                        for service in withServices:
+                            for p in self.scanedList:
+                                if service in p.advServiceUUIDs:
+                                    count += 1
+                        if count >= numOfPeripherals:
+                            break
+                else:
+                    if numOfPeripherals > 0 and len(self.scanedList) >= numOfPeripherals:
+                        self.logger.info("Found %s peripherals." % len(self.scanedList))
+                        break
         self.stopScan()
 
         # return the first found peripheral

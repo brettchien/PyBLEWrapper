@@ -162,8 +162,7 @@ class OSXBLECharacteristic(Characteristic):
     def value(self, data):
         handler = None
         if self.service and self.service.peripheral.delegate:
-            handler = self.service.peripheral.delegate.profile_handlers[self.profile.UUID]
-            
+            handler = self.service.peripheral.delegate.profile_handlers[self.profile.UUID]            
         else:
             if self.profile:
                 handler = ProfileHandler[self.profile.UUID]

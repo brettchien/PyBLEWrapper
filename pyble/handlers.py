@@ -14,7 +14,8 @@ class PeripheralHandlerMount(type):
 class PeripheralHandler(object):
     __metaclass__ = PeripheralHandlerMount
 
-    def __init__(self, UUID):
+    def __init__(self, UUID=""):
+        self.UUID = UUID
         self.profile_handlers = {}
 
     def initialize(self):
@@ -58,6 +59,9 @@ class ProfileHandlerMount(type):
 #        ProfileHandlerMount.find_handlers()
         return self._handlers
 
+    def keys(self):
+        return self._handlers.keys()
+
     def __getitem__(self, key, retry=True, default=None):
         try:
             handler_cls = self._handlers[key]
@@ -66,9 +70,17 @@ class ProfileHandlerMount(type):
             if retry:
                 ProfileHandlerMount.find_handlers()
                 handler_cls = self.__getitem__(key, retry=False)
-                return handler_cls()
+                if handler_cls:
+                    return handler_cls()
+                else:
+                    # if there is a default handler
+                    if "*" in self._handlers:
+                        handler_cls = self._handlers["*"]
+                        return handler_cls()
+                    else:
+                        return default
             else:
-                raise KeyError("Profile(%s) handler is not found." % key)
+                return default
 
     def register_handler(cls, handler_cls):
         if hasattr(handler_cls, "UUID"):
@@ -98,7 +110,6 @@ class ProfileHandlerMount(type):
                             f, filename, desc = imp.find_module(module, [hpath])
                             globals()[module] = mod_obj = imp.load_module(module, f, filename, desc)
 
-
 class ProfileHandler(object):
     __metaclass__ = ProfileHandlerMount
         
@@ -111,3 +122,11 @@ class ProfileHandler(object):
     def on_write(self, characteristic, data):
         pass
 
+class DefaultProfileHandler(ProfileHandler):
+    UUID = "*"
+
+    def on_read(self, characteristic, data):
+        ans = []
+        for b in data:
+            ans.append("0x%02X" % ord(b))
+        return " ".join(ans)

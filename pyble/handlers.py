@@ -5,8 +5,9 @@ import inspect
 class PeripheralHandlerMount(type):
     def __init__(cls, name, bases, attrs):
         if not hasattr(cls, 'handlers'):
-            cls.pool = {}
             cls.handler = {}
+        if not hasattr(cls, 'pool'):
+            cls.pool = {}
         if name == "PeripheralHandler":
             return
         cls.pool[name] = cls
@@ -14,19 +15,37 @@ class PeripheralHandlerMount(type):
 class PeripheralHandler(object):
     __metaclass__ = PeripheralHandlerMount
 
-    def __init__(self, UUID=""):
+    def __init__(self, peripheral, UUID=""):
+        self.peripheral = peripheral
         self.UUID = UUID
-        self.profile_handlers = {}
+        # copy over all existing profile handlers
+        self.profile_handlers = dict(ProfileHandler.handlers)
+
+    @property
+    def handlers(self):
+        return self.profile_handlers
+
+    def keys(self):
+        return self.profile_handlers.keys()
+
+    def __getitem__(self, key, default=None):
+        try:
+            handler_cls = self.profile_handlers[key]
+            return handler_cls()
+        except KeyError:
+            if "*" in self.profile_handlers:
+                handler_cls = self.profile_handlers["*"]
+                return handler_cls()
+            else:
+                return default
+
+    def addProfileHandler(self, handler_cls):
+        """ Allow peripheral handler object to use customized profile handler
+        """
+        self.profile_handlers[handler_cls.UUID] = handler_cls
 
     def initialize(self):
-        print "user init"
-
-    def setDelegate(self, UUID, cls_name):
-        if cls_name in self.pool:
-            handler = cls_name()
-            self.handler[UUID] = handler
-            for pUUID, pHandler in handler.profile_handlers:
-                self.profile_handlers[pUUID] = pHandler()
+        pass
 
     def update_rssi(self, value):
         pass
@@ -37,26 +56,28 @@ class PeripheralHandler(object):
     def update_services(self, value):
         pass
 
-    def on_connect(self, error):
+    def on_connect(self):
         pass
 
-    def on_disconnect(self, error):
+    def on_disconnect(self):
         pass
+
 
 class ProfileHandlerMount(type):
     # Defaults to . and .profile, append with register_profile_dir
     profile_path = ["."]
+    _AUTOLOAD = True
 
     def __init__(cls, name, bases, attrs):
         if not hasattr(cls, '_handlers'):
             cls._handlers = {} 
         if name == "ProfileHandler":
             return
-        cls.register_handler(cls)
+        if cls._AUTOLOAD:
+            cls.register_handler(cls)
 
     @property
     def handlers(self):
-#        ProfileHandlerMount.find_handlers()
         return self._handlers
 
     def keys(self):

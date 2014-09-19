@@ -5,21 +5,11 @@ import pyble
 from pyble.handlers import PeripheralHandler, ProfileHandler
 from pyble.osx.backend import OSXCentralManagerApp
 
-#cm = pyble.CentralManager()
-# scan a peripheral
-#p = cm.startScan()
-#cm.registerPeripheralHandler(MyPeripheral)
-#handler = MyPeripheralHandler(p)
-#cm.connectPeripheral(p)
-#cm.run()
+import time
 
-
-#class MyPeripheral(PeripheralHandler):
-#    def initialize(self):
-#        print "haha"
-
-class MyDefeult(ProfileHandler):
+class MyDefault(ProfileHandler):
     UUID = "*"
+    _AUTOLOAD = False
 
     def on_read(self, characteristic, data):
         ans = []
@@ -65,6 +55,21 @@ class MyProfile(ProfileHandler):
         if characteristic.UUID == "2A19":
             return ord(data)
 
+class MyPeripheral(PeripheralHandler):
+
+    def initialize(self):
+        self.addProfileHandler(MyDefault)
+
+    def on_connect(self):
+        print self.peripheral, "connect"
+
+    def on_disconnect(self):
+        print self.peripheral, "disconnect"
+
+    def on_rssi(self, value):
+        print self.peripheral, " update RSSI:", value
+
+
 def main():
     cm = pyble.CentralManager()
     if not cm.ready:
@@ -78,11 +83,13 @@ def main():
                 break
         except Exception as e:
             print e
+#    target.delegate = MyPeripheral
     p = cm.connectPeripheral(target)
     for service in p:
         print service
         for c in service:
             print "  {} : {}".format(c, str(c.value))
+
     cm.disconnectPeripheral(p)
 
 if __name__ == "__main__":

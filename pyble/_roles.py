@@ -29,14 +29,17 @@ class Peripheral(LoggerObject):
     @property
     def delegate(self):
         if self._delegate:
-            return self._delegate.__class__
+            return self._delegate
         else:
             return None
 
     @delegate.setter
     def delegate(self, handler_cls):
-        self._delegate = handler_cls(self.UUID)
-
+        if handler_cls:
+            self._delegate = handler_cls(self, self.UUID)
+            self._delegate.initialize()
+        else:
+            self._delegate = None
 
     @property
     def rssi(self):
@@ -94,6 +97,12 @@ class Peripheral(LoggerObject):
         self.update_rssi_callback = func
 
     def updateState(self):
+        if self._delegate:
+            if self.state == Peripheral.CONNECTED:
+                self._delegate.on_connect()
+            elif self.state == Peripheral.DISCONNECTED:
+                self._delegate.on_disconnect()
+
         if self.update_state_callback:
             try:
                 self.update_state_callback(self.state)
@@ -101,6 +110,9 @@ class Peripheral(LoggerObject):
                 print e
 
     def updateRSSI(self, rssi):
+        if self._delegate:
+            self._delegate.on_rssi(rssi)
+
         if self.update_rssi_callback:
             try:
                 self.update_rssi_callback(rssi)

@@ -39,6 +39,11 @@ class PeripheralHandler(object):
             else:
                 return default
 
+    def addProfileHandlerPath(self, fpath):
+        """ Load all profile hanlders in a directory for this peripheral handler
+        """
+        pass
+
     def addProfileHandler(self, handler_cls):
         """ Allow peripheral handler object to use customized profile handler
         """

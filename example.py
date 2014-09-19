@@ -86,6 +86,8 @@ def main():
 #    target.delegate = MyPeripheral
     p = cm.connectPeripheral(target)
     for service in p:
+        if service.UUID == "FFF0":
+            continue
         print service
         for c in service:
             print "  {} : {}".format(c, str(c.value))

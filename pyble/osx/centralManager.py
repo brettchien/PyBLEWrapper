@@ -146,17 +146,15 @@ class OSXCentralManager(NSObject, Central):
                     raise BLETimeoutError("Scan timeout after %s seconds!!" % timeout)
                 if len(withServices):
                     if len(self.scanedList):
-                        count = 0
+                        tmpList = self.scanedList[:]
+                        self.scanedList = []
                         for service in withServices:
-                            for p in self.scanedList:
+                            for p in tmpList:
                                 if service in p.advServiceUUIDs:
-                                    count += 1
-                        if count >= numOfPeripherals:
-                            break
-                else:
-                    if numOfPeripherals > 0 and len(self.scanedList) >= numOfPeripherals:
-                        self.logger.info("Found %s peripherals." % len(self.scanedList))
-                        break
+                                    self.scanedList.append(p)
+                if numOfPeripherals > 0 and len(self.scanedList) >= numOfPeripherals:
+                    self.logger.info("Found %s peripherals." % len(self.scanedList))
+                    break
         self.stopScan()
 
         # return the first found peripheral

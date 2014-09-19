@@ -154,7 +154,7 @@ class OSXBLECharacteristic(Characteristic):
 
     @property
     def value(self):
-        if self._value == None and self.properties["read"]:
+        if self.properties["read"]:
             self.service.peripheral.readValueForCharacteristic(self.instance)
         return self._value
 

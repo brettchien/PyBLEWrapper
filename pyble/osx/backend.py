@@ -1,6 +1,11 @@
+from __future__ import absolute_import
+
 # objective-c frameworks
 from objc import *
 from Foundation import *
+
+from pyble.patterns import Trace, TraceObject
+from pyble._roles import Central, Peripheral
 
 # CBCentralManager Bluetooth 4.0 worker
 from centralManager import OSXCentralManager, BLETimeoutError
@@ -19,9 +24,6 @@ except:
     from queue import Queue, Empty
 
 logger = logging.getLogger(__name__)
-
-import pyble
-from pyble.patterns import LoggerObject, Trace, TraceObject
 
 import atexit
 

@@ -110,8 +110,7 @@ class ProfileHandlerMount(type):
 
     def register_handler(cls, handler_cls):
         if hasattr(handler_cls, "UUID"):
-            if handler_cls not in cls._handlers:
-                cls._handlers[handler_cls.UUID] = handler_cls
+            cls._handlers[handler_cls.UUID] = handler_cls
         else:
             print "An UUID is needed for a ProfileHandler"
 
@@ -138,11 +137,15 @@ class ProfileHandlerMount(type):
 
 class ProfileHandler(object):
     __metaclass__ = ProfileHandlerMount
+    names = {}
         
     def initialize(self):
         raise NotImplementedError
 
     def on_read(self, characteristic, data):
+        pass
+
+    def on_notify(self, characteristic, data):
         pass
 
     def on_write(self, characteristic, data):

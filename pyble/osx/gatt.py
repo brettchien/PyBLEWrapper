@@ -1,3 +1,4 @@
+from Foundation import NSData
 from objc import *
 
 from pyble._gatt import Service, Characteristic, Descriptor
@@ -96,6 +97,7 @@ class OSXBLECharacteristic(Characteristic):
         self.service = service
         self.profile = profile
         self.UUID = ""
+        self._notify = False
         if not instance:
             return
 
@@ -142,6 +144,18 @@ class OSXBLECharacteristic(Characteristic):
             print "\t%s: " % d, d.value
 
     @property
+    def notify(self):
+        return self._notify
+
+    @notify.setter
+    def notify(self, value):
+        if not self.properties["notify"]:
+            self._notify = False
+        else:
+            self.service.peripheral.setNotifyForCharacteristic(value, self.instance)
+        return self._notify
+
+    @property
     def instance(self):
         return self._instance
 
@@ -156,22 +170,23 @@ class OSXBLECharacteristic(Characteristic):
     def value(self):
         if self.properties["read"]:
             self.service.peripheral.readValueForCharacteristic(self.instance)
-        return self._value
+            ret = self.handler.on_read(self, self._value)
+            if ret:
+                self._value = ret
+                return ret
+            return self._value
+        else:
+            return None
 
     @value.setter
     def value(self, data):
-        handler = None
-        if self.service and self.service.peripheral.delegate:
-            handler = self.service.peripheral.delegate[self.profile.UUID]            
-        else:
-            if self.profile:
-                handler = ProfileHandler[self.profile.UUID]
-        if handler:
-            ret = handler.on_read(self, data)
-            if ret:
-                self._value = ret
-        else:
-            self._value = data
+        if not self.properties["write"]:
+            return
+        # data needs to be byte array
+        if not isinstance(data, bytearray):
+            raise TypeError("data needs to be a bytearray")
+        rawdata = NSData.dataWithBytes_length_(data, len(data))
+        self.service.peripheral.writeValueForCharacteristic(rawdata, self.instance)
 
     @property
     def description(self):

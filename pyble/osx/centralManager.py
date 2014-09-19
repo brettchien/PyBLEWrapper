@@ -116,6 +116,13 @@ class OSXCentralManager(NSObject, Central):
             except:
                 pass
 
+    def loop(self, duration=0):
+        startTime = datetime.now()
+        while True:
+            NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
+            if duration > 0 and datetime.now() - startTime > timedelta(seconds=duration):
+                break
+
     def stop(self):
         self.logger.debug("Cleaning Up")
 

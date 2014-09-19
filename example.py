@@ -3,9 +3,9 @@ sys.dont_write_bytecode=True
 
 import pyble
 from pyble.handlers import PeripheralHandler, ProfileHandler
-from pyble.osx.backend import OSXCentralManagerApp
 
 import time
+import struct
 
 class MyDefault(ProfileHandler):
     UUID = "*"
@@ -18,42 +18,48 @@ class MyDefault(ProfileHandler):
         ret = "0x" + "".join(ans)
         return ret
 
-class GenericAccess(ProfileHandler):
-    UUID = "1800"
+class Acceleration(ProfileHandler):
+    UUID = "FFA0"
+    _AUTOLOAD = True
+    names = {
+            "FFA0": "3-axis Acceleration",
+            "FFA1": "Sensor Enable",
+            "FFA2": "Acceleration Rate",
+            "FFA3": "X-axis",
+            "FFA4": "Y-axis",
+            "FFA5": "Z-axis",
+            "FFA6": "All axis"
+            }
+
+    def initialize(self):
+        pass
 
     def on_read(self, characteristic, data):
+        print characteristic.UUID, "on read"
+        ans = []
+        for b in data:
+            ans.append("%02X" % ord(b))
+        ret = "0x" + "".join(ans)
+        return ret
+
+    def on_notify(self, characteristic, data):
         cUUID = characteristic.UUID
-        if cUUID == "2A00":
-            return str(data)
-        elif cUUID == "2A03":
-            address = []
-            for b in data:
-                address.append("%02X" % ord(b))
-            return "-".join(address)
-        else:
-            ans = []
-            for b in data:
-                ans.append("0x%02X" % ord(b))
-            return " ".join(ans)
+        if cUUID == "FFA6":
+            x, y, z = self.handleXYZ(data)
+            print x, y ,z
 
-class DeviceInformation(ProfileHandler):
-    UUID = "180A"
-
-    def on_read(self, characteristic, data):
-        if characteristic.UUID == "2A23":
-            address = []
-            for b in data:
-                address.append("%X" % ord(b))
-            return "-".join(address)
-        else:
-            return str(data)
-
-class MyProfile(ProfileHandler):
-    UUID = "180F"
-
-    def on_read(self, characteristic, data):
-        if characteristic.UUID == "2A19":
-            return ord(data)
+    def handleXYZ(self, data):
+        x, y, z = struct.unpack(">HHH", data)
+        x = (0.0 + (x >> 4)) / 1000
+        y = (0.0 + (y >> 4)) / 1000
+        z = (0.0 + (z >> 4)) / 1000
+#        x =  1.0 if x >  1.0 else x
+#        x = -1.0 if x < -1.0 else x
+#        y =  1.0 if y >  1.0 else y
+#        y = -1.0 if y < -1.0 else y
+#        z =  1.0 if z >  1.0 else z
+#        z = -1.0 if z < -1.0 else z
+        return (x, y, z)
 
 class MyPeripheral(PeripheralHandler):
 
@@ -77,7 +83,7 @@ def main():
     target = None
     while True:
         try:
-            target = cm.startScan(withServices=["FFF0"])
+            target = cm.startScan(withServices=["180D"])
             if target:
                 print target
                 break
@@ -85,20 +91,26 @@ def main():
             print e
 #    target.delegate = MyPeripheral
     p = cm.connectPeripheral(target)
-    for service in p:
-        if service.UUID == "FFF0":
-            continue
-        print service
-        for c in service:
-            print "  {} : {}".format(c, str(c.value))
+#    for service in p:
+#        if service.UUID == "FFF0":
+#            continue
+#        print service
+#        for c in service:
+#            print c, " : ", c.value
+#            print c
+#            print "description: ", c.description
+#            print "value      : ", c.value
+
+    c = p["FFA0"]["FFA1"]
+    print p["FFA0"]["FFA3"]
+    print p["FFA0"]["FFA6"].properties
+    p["FFA0"]["FFA6"].notify = True
+    c.value = bytearray(chr(1))
+    print c, c.value
+    cm.loop(duration=10)
 
     cm.disconnectPeripheral(p)
 
 if __name__ == "__main__":
     print ProfileHandler.handlers
-    print ProfileHandler.handlers["180F"]
-    print ProfileHandler["180F"]
-    print ProfileHandler["2A23"]
-#    app = OSXCentralManagerApp()
-#    app.cmdloop()
     main()

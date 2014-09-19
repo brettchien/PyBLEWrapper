@@ -18,7 +18,18 @@ class Service(LoggerObject):
         self.isPrimary = False
         self.characteristics = []
         self._characteristicUUIDs = []
+        self._handler = None
 
+    @property
+    def handler(self):
+        # load handler if a peripheral delegate existis
+        if self.peripheral.delegate:
+            self._handler = self.peripheral.delegate[self.UUID]
+        # load handler from profile handler pool
+        if not self._handler:
+            self._handler = ProfileHandler[self.UUID]
+        return self._handler
+ 
     @property
     def characteristicUUIDs(self):
         if len(self._characteristicUUIDs) == 0:
@@ -63,6 +74,9 @@ class Service(LoggerObject):
             identifier = self.UUID
         else:
             identifier = str(self.UUID).upper()
+        if self.name == "UNKNOWN":
+            if self.handler and self.UUID in self.handler.names:
+                self.name = self.handler.names[self.UUID]
         string = "Service{%s <%s>}" % (self.name, identifier)
         if self.isPrimary:
             string = "*" + string
@@ -89,7 +103,18 @@ class Characteristic(LoggerObject):
         self.isNotifying = False
         self.isBroadcasted = False
         self._value = None
+        self._handler = None
 
+    @property
+    def handler(self):
+        # load handler if a peripheral delegate existis
+        if self.service and self.service.peripheral.delegate:
+            self._handler = self.service.peripheral.delegate[self.profile.UUID]
+        # load handler from profile handler pool
+        if not self._handler and self.service:
+            self._handler = ProfileHandler[self.service.UUID]
+        return self._handler
+ 
     @property
     def value(self):
         return self._value
@@ -112,6 +137,9 @@ class Characteristic(LoggerObject):
             identifier = self.UUID
         else:
             identifier = str(self.UUID).upper()
+        if self.name == "UNKNOWN":
+            if self.handler and self.UUID in self.handler.names:
+                self.name = self.handler.names[self.UUID]
         return "Characteristic{%s <%s>}" % (self.name, identifier)
 
     def __str__(self):

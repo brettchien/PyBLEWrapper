@@ -292,10 +292,9 @@ class OSXPeripheral(NSObject, Peripheral):
         p = s.peripheral
         c = s.findCharacteristicByInstance(characteristic)
         if error == nil:
-            self.logger.info("Characteristic Value Write Done")
+            self.logger.debug("Characteristic Value Write Done")
         else:
             self.logger.error("Characteristic Value Write Fail")
-
 
     def peripheral_didWriteValueForDescriptor_error_(self, peripheral, descriptor, error):
         if error == nil:
@@ -319,7 +318,7 @@ class OSXPeripheral(NSObject, Peripheral):
             c._notify = False
         else:
             c._notify = True
-        self.logger.info("%s:%s:%s set Notification %s" % (p, s, c, result))
+        self.logger.debug("%s:%s:%s set Notification %s" % (p, s, c, result))
 
     # Retrieving a Peripheral's Received Signal Strength Indicator(RSSI) Data
     def peripheralDidUpdateRSSI_error_(self, peripheral, error):

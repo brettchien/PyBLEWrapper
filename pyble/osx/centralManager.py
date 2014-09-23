@@ -12,7 +12,7 @@ import uuid
 from util import CBUUID2String
 from datetime import datetime, timedelta
 from pyble.patterns import Trace
-from threading import Condition
+from threading import Thread, Condition, Event
 from functools import wraps
 
 class BLETimeoutError(Exception):
@@ -58,6 +58,7 @@ class OSXCentralManager(NSObject, Central):
         self.cv = Condition()
         self.ready = False
         self.wait4Startup()
+        self._stop = Event()
 
         return self
 
@@ -83,7 +84,7 @@ class OSXCentralManager(NSObject, Central):
             self.ready = True
             with self.cv:
                 try:
-                    self.cv.notifyAll()
+                    self.cv.notify()
                 except Exception as e:
                     print e
             return ret
@@ -117,14 +118,22 @@ class OSXCentralManager(NSObject, Central):
                 pass
 
     def loop(self, duration=0):
+        if duration == 0:
+            self.logger.info("Stop the loop by Ctrl+C ...")
         startTime = datetime.now()
         while True:
-            NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
-            if duration > 0 and datetime.now() - startTime > timedelta(seconds=duration):
+            try:
+                NSRunLoop.currentRunLoop().runMode_beforeDate_(NSDefaultRunLoopMode, NSDate.distantPast())
+                if duration > 0 and datetime.now() - startTime > timedelta(seconds=duration):
+                    break
+                if self._stop.isSet():
+                    break
+            except KeyboardInterrupt:
+                print "\nEnd loop ..."
                 break
 
     def stop(self):
-        self.logger.debug("Cleaning Up")
+        self._stop.set()
 
     def startScan(self, withServices=[], timeout=5, numOfPeripherals=1, allowDuplicates=False):
         self.logger.debug("Start Scan")

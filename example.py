@@ -35,7 +35,6 @@ class Acceleration(ProfileHandler):
         pass
 
     def on_read(self, characteristic, data):
-        print characteristic.UUID, "on read"
         ans = []
         for b in data:
             ans.append("%02X" % ord(b))
@@ -53,12 +52,12 @@ class Acceleration(ProfileHandler):
         x = (0.0 + (x >> 4)) / 1000
         y = (0.0 + (y >> 4)) / 1000
         z = (0.0 + (z >> 4)) / 1000
-#        x =  1.0 if x >  1.0 else x
-#        x = -1.0 if x < -1.0 else x
-#        y =  1.0 if y >  1.0 else y
-#        y = -1.0 if y < -1.0 else y
-#        z =  1.0 if z >  1.0 else z
-#        z = -1.0 if z < -1.0 else z
+        x =  2.0 if x >  2.0 else x
+        x = -2.0 if x < -2.0 else x
+        y =  2.0 if y >  2.0 else y
+        y = -2.0 if y < -2.0 else y
+        z =  2.0 if z >  2.0 else z
+        z = -2.0 if z < -2.0 else z
         return (x, y, z)
 
 class MyPeripheral(PeripheralHandler):
@@ -102,15 +101,12 @@ def main():
 #            print "value      : ", c.value
 
     c = p["FFA0"]["FFA1"]
-    print p["FFA0"]["FFA3"]
-    print p["FFA0"]["FFA6"].properties
     p["FFA0"]["FFA6"].notify = True
     c.value = bytearray(chr(1))
-    print c, c.value
-    cm.loop(duration=10)
-
+#    cm.loop(duration=10)
+    cm.loop()
     cm.disconnectPeripheral(p)
 
 if __name__ == "__main__":
-    print ProfileHandler.handlers
+#    print ProfileHandler.handlers
     main()

@@ -159,3 +159,6 @@ class DefaultProfileHandler(ProfileHandler):
         for b in data:
             ans.append("0x%02X" % ord(b))
         return " ".join(ans)
+
+    def on_notify(self, characteristic, data):
+        self.on_read(characteristic, data)

@@ -161,4 +161,4 @@ class DefaultProfileHandler(ProfileHandler):
         return " ".join(ans)
 
     def on_notify(self, characteristic, data):
-        self.on_read(characteristic, data)
+        print self.on_read(characteristic, data)

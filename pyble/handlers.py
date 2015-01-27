@@ -72,7 +72,7 @@ class PeripheralHandler(object):
 class ProfileHandlerMount(type):
     # Defaults to . and .profile, append with register_profile_dir
     profile_path = ["."]
-    _AUTOLOAD = True
+    _AUTOLOAD = False
 
     def __init__(cls, name, bases, attrs):
         if not hasattr(cls, '_handlers'):

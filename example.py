@@ -13,12 +13,13 @@ class MyDefault(ProfileHandler):
     _AUTOLOAD = True
     names = {
         "3D9FFEC0-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile",
-        "3D9FFEC1-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile",
-        "3D9FFEC2-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile",
-        "3D9FFEC3-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile"
+        "3D9FFEC1-50BB-3960-8782-C593EDBC35EA": "EcoZen Char 1",
+        "3D9FFEC2-50BB-3960-8782-C593EDBC35EA": "EcoZen Char 2",
+        "3D9FFEC3-50BB-3960-8782-C593EDBC35EA": "EcoZen Char 3"
     }
 
     def initialize(self):
+        print "init"
         pass
 
     def on_read(self, characteristic, data):

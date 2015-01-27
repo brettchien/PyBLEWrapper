@@ -37,6 +37,7 @@ class DeviceInformation(ProfileHandler):
 
 class GenericAttribute(ProfileHandler):
     UUID = "1801"
+    _AUTOLOAD = True
 
     def on_read(self, characteristic, data):
         cUUID = characteristic.UUID

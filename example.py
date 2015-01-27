@@ -10,6 +10,9 @@ import struct
 class MyDefault(ProfileHandler):
     UUID = "*"
     _AUTOLOAD = False
+    
+    def on_load(self):
+        print "laoding profile FFA0"
 
     def on_read(self, characteristic, data):
         ans = []
@@ -33,6 +36,9 @@ class Acceleration(ProfileHandler):
 
     def initialize(self):
         pass
+
+    def on_load(self):
+        print "laoding profile FFA0"
 
     def on_read(self, characteristic, data):
         ans = []

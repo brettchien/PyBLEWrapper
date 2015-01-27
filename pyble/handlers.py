@@ -97,6 +97,9 @@ class ProfileHandlerMount(type):
                 ProfileHandlerMount.find_handlers()
                 handler_cls = self.__getitem__(key, retry=False)
                 if handler_cls:
+                    instance = handler_cls()
+                    if 'on_load' in instance:
+                        instance.on_load()
                     return handler_cls()
                 else:
                     # if there is a default handler

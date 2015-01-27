@@ -1,5 +1,5 @@
 import sys
-sys.dont_write_bytecode=True
+sys.dont_write_bytecode = True
 
 import pyble
 from pyble.handlers import PeripheralHandler, ProfileHandler
@@ -7,12 +7,19 @@ from pyble.handlers import PeripheralHandler, ProfileHandler
 import time
 import struct
 
+
 class MyDefault(ProfileHandler):
-    UUID = "*"
-    _AUTOLOAD = False
-    
-    def on_load(self):
-        print "laoding profile FFA0"
+    UUID = "3D9FFEC0-50BB-3960-8782-C593EDBC35EA"
+    _AUTOLOAD = True
+    names = {
+        "3D9FFEC0-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile",
+        "3D9FFEC1-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile",
+        "3D9FFEC2-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile",
+        "3D9FFEC3-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile"
+    }
+
+    def initialize(self):
+        pass
 
     def on_read(self, characteristic, data):
         ans = []
@@ -21,24 +28,22 @@ class MyDefault(ProfileHandler):
         ret = "0x" + "".join(ans)
         return ret
 
+
 class Acceleration(ProfileHandler):
     UUID = "FFA0"
     _AUTOLOAD = True
     names = {
-            "FFA0": "3-axis Acceleration",
-            "FFA1": "Sensor Enable",
-            "FFA2": "Acceleration Rate",
-            "FFA3": "X-axis",
-            "FFA4": "Y-axis",
-            "FFA5": "Z-axis",
-            "FFA6": "All axis"
-            }
+        "FFA0": "3-axis Acceleration",
+        "FFA1": "Sensor Enable",
+        "FFA2": "Acceleration Rate",
+        "FFA3": "X-axis",
+        "FFA4": "Y-axis",
+        "FFA5": "Z-axis",
+        "FFA6": "All axis"
+    }
 
     def initialize(self):
         pass
-
-    def on_load(self):
-        print "laoding profile FFA0"
 
     def on_read(self, characteristic, data):
         ans = []
@@ -51,7 +56,7 @@ class Acceleration(ProfileHandler):
         cUUID = characteristic.UUID
         if cUUID == "FFA6":
             x, y, z = self.handleXYZ(data)
-            print x, y ,z
+            print x, y, z
 
     def handleXYZ(self, data):
         x, y, z = struct.unpack(">HHH", data)
@@ -65,6 +70,7 @@ class Acceleration(ProfileHandler):
         z =  2.0 if z >  2.0 else z
         z = -2.0 if z < -2.0 else z
         return (x, y, z)
+
 
 class MyPeripheral(PeripheralHandler):
 
@@ -91,6 +97,7 @@ def main():
 #            target = cm.startScan(withServices=["180D"])
             target = cm.startScan()
             if target and target.name == "EcoZe1":
+#            if target:
                 print target
                 break
         except Exception as e:
@@ -98,11 +105,14 @@ def main():
 #    target.delegate = MyPeripheral
     p = cm.connectPeripheral(target)
     for service in p:
-#        if service.UUID == "FFF0":
+        #        if service.UUID == "FFF0":
+#            continue
+#        if service.UUID == "180A":
 #            continue
         print service
         for c in service:
-            print c, " : ", c.value
+            print c, " : ",
+            print c.value
 #            print c
 #            print "description: ", c.description
 #            print "value      : ", c.value
@@ -111,9 +121,9 @@ def main():
 #    p["FFA0"]["FFA6"].notify = True
 #    c.value = bytearray(chr(1))
 #    cm.loop(duration=10)
-    cm.loop()
+#    cm.loop()
     cm.disconnectPeripheral(p)
 
 if __name__ == "__main__":
-#    print ProfileHandler.handlers
+    #    print ProfileHandler.handlers
     main()

@@ -375,7 +375,6 @@ class OSXCentralManager(NSObject, Central):
         #   IsConnectable 
         if CBAdvertisementDataIsConnectable in advertisementData:
             p.advIsConnectable = advertisementData[CBAdvertisementDataIsConnectable]
-            print p.advIsConnectable
         #   SolicitedServiceUUIDs
         if CBAdvertisementDataSolicitedServiceUUIDsKey in advertisementData:
             p.advSolicitedServiceUUIDs = []

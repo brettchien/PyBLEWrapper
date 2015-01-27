@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 from pyble.patterns import Trace
 from pyble.handlers import ProfileHandler
 
+
 @Trace
 class OSXBLEService(Service):
     def __init__(self, peripheral=None, instance=None):
@@ -36,7 +37,7 @@ class OSXBLEService(Service):
                 self.name = "UNKNOWN"
             self.UUID = CBUUID2String(uuidBytes)
         elif len(uuidBytes) == 16:
-            self.UUID = uuid.UUID(bytes=uuidBytes)
+            self.UUID = str(uuid.UUID(bytes=uuidBytes)).upper()
         else:
             # invalid UUID size
             pass
@@ -49,7 +50,7 @@ class OSXBLEService(Service):
             for characteristic in self.characteristics:
                 self._characteristicUUIDs.append(characteristic.UUID)
         return self._characteristicUUIDs
- 
+
     @characteristicUUIDs.setter
     def characteristicUUIDs(self, value):
         try:
@@ -73,6 +74,7 @@ class OSXBLEService(Service):
             if str(c.UUID) == CBUUID2String(instance._.UUID._.data):
                 return c
         return None
+
 
 class OSXBLECharacteristic(Characteristic):
     def __init__(self, service=None, profile=None, instance=None):
@@ -110,7 +112,7 @@ class OSXBLECharacteristic(Characteristic):
                 self.name = "UNKNOWN"
             self.UUID = CBUUID2String(uuidBytes)
         elif len(uuidBytes) == 16:
-            self.UUID = uuid.UUID(bytes=uuidBytes)
+            self.UUID = str(uuid.UUID(bytes=uuidBytes)).upper()
         else:
             # invalid UUID size
             pass
@@ -252,7 +254,7 @@ class OSXBLEDescriptor(Descriptor):
                 self.name = "UNKNOWN"
             self.UUID = CBUUID2String(uuidBytes)
         elif len(uuidBytes) == 16:
-            self.UUID = uuid.UUID(bytes=uuidBytes)
+            self.UUID = str(uuid.UUID(bytes=uuidBytes)).upper()
         else:
             # invalid UUID size
             pass

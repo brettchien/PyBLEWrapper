@@ -80,7 +80,6 @@ class ProfileHandlerMount(type):
         if name == "ProfileHandler":
             return
         if cls._AUTOLOAD:
-            print "haha"
             cls.register_handler(cls)
 
     @property

@@ -11,7 +11,7 @@ def CBUUID2String(uuidBytes):
         for b in uuidBytes:
             ret += "%02X" % ord(b)
     elif len(uuidBytes) == 16:
-        ret = str(uuid.UUID(bytes=uuidBytes))
+        ret = str(uuid.UUID(bytes=uuidBytes)).upper()
     else:
         return None
     return ret

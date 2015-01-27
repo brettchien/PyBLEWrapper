@@ -157,6 +157,7 @@ class ProfileHandler(object):
 
 class DefaultProfileHandler(ProfileHandler):
     UUID = "*"
+    _AUTOLOAD = True
 
     def on_read(self, characteristic, data):
         ans = []

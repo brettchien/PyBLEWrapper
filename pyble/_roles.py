@@ -1,6 +1,7 @@
-import logging
+#import logging
 from patterns import LoggerObject
-from handlers import PeripheralHandler
+#from handlers import PeripheralHandler
+
 
 class Peripheral(LoggerObject):
     DISCONNECTED = 0
@@ -134,6 +135,7 @@ class Peripheral(LoggerObject):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
 class Central(LoggerObject):
     def __init__(self):
         try:
@@ -143,4 +145,3 @@ class Central(LoggerObject):
 
         self.availableList = []
         self.connectedList = []
-

@@ -20,6 +20,7 @@ default_profilepath = os.path.abspath(os.path.dirname(inspect.getfile(profile)))
 ProfileHandler.register_path(default_profilepath)
 ProfileHandler.find_handlers()
 
+
 # loading customized class base on operating system
 class Peripheral(object):
     def __new__(cls, *args, **kwargs):
@@ -35,6 +36,7 @@ class Peripheral(object):
             pass
         return None
 
+
 class CentralManager(object):
     def __new__(cls, *args, **kwargs):
         import platform
@@ -48,6 +50,7 @@ class CentralManager(object):
             # windows
             pass
 
+
 class Service(object):
     def __new__(cls, *args, **kwargs):
         import platform
@@ -60,6 +63,7 @@ class Service(object):
         else:
             # windows
             pass
+
 
 class Profile(object):
     def __new__(cls, *args, **kwargs):
@@ -101,5 +105,3 @@ class Descriptor(object):
         else:
             # windows
             pass
-
-

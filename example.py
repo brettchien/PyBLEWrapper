@@ -88,27 +88,28 @@ def main():
     target = None
     while True:
         try:
-            target = cm.startScan(withServices=["180D"])
-            if target:
+#            target = cm.startScan(withServices=["180D"])
+            target = cm.startScan()
+            if target and target.name == "EcoZe1":
                 print target
                 break
         except Exception as e:
             print e
 #    target.delegate = MyPeripheral
     p = cm.connectPeripheral(target)
-#    for service in p:
+    for service in p:
 #        if service.UUID == "FFF0":
 #            continue
-#        print service
-#        for c in service:
-#            print c, " : ", c.value
+        print service
+        for c in service:
+            print c, " : ", c.value
 #            print c
 #            print "description: ", c.description
 #            print "value      : ", c.value
 
-    c = p["FFA0"]["FFA1"]
-    p["FFA0"]["FFA6"].notify = True
-    c.value = bytearray(chr(1))
+#    c = p["FFA0"]["FFA1"]
+#    p["FFA0"]["FFA6"].notify = True
+#    c.value = bytearray(chr(1))
 #    cm.loop(duration=10)
     cm.loop()
     cm.disconnectPeripheral(p)

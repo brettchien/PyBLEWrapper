@@ -1,6 +1,6 @@
 import os
 import imp
-import inspect
+
 
 class PeripheralHandlerMount(type):
     def __init__(cls, name, bases, attrs):
@@ -11,6 +11,7 @@ class PeripheralHandlerMount(type):
         if name == "PeripheralHandler":
             return
         cls.pool[name] = cls
+
 
 class PeripheralHandler(object):
     __metaclass__ = PeripheralHandlerMount
@@ -75,10 +76,11 @@ class ProfileHandlerMount(type):
 
     def __init__(cls, name, bases, attrs):
         if not hasattr(cls, '_handlers'):
-            cls._handlers = {} 
+            cls._handlers = {}
         if name == "ProfileHandler":
             return
         if cls._AUTOLOAD:
+            print "haha"
             cls.register_handler(cls)
 
     @property
@@ -97,9 +99,7 @@ class ProfileHandlerMount(type):
                 ProfileHandlerMount.find_handlers()
                 handler_cls = self.__getitem__(key, retry=False)
                 if handler_cls:
-                    instance = handler_cls()
-                    if 'on_load' in instance:
-                        instance.on_load()
+                    handler_cls = self._handlers[key]
                     return handler_cls()
                 else:
                     # if there is a default handler
@@ -134,14 +134,15 @@ class ProfileHandlerMount(type):
                     if file_.endswith('.py') and file_ not in ["__init__.py", "setup.py"]:
                         module = file_[:-3]
                         mod_obj = globals().get(module)
-                        if mod_obj == None:
+                        if mod_obj is None:
                             f, filename, desc = imp.find_module(module, [hpath])
                             globals()[module] = mod_obj = imp.load_module(module, f, filename, desc)
+
 
 class ProfileHandler(object):
     __metaclass__ = ProfileHandlerMount
     names = {}
-        
+
     def initialize(self):
         raise NotImplementedError
 
@@ -153,6 +154,7 @@ class ProfileHandler(object):
 
     def on_write(self, characteristic, data):
         pass
+
 
 class DefaultProfileHandler(ProfileHandler):
     UUID = "*"

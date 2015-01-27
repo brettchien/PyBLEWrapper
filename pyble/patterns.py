@@ -5,18 +5,19 @@ class singleton:
         self.instance = None
 
     def __call__(self, *args, **kwargs):
-        if self.instance == None:
+        if self.instance is None:
             self.instance = self.klass(*args, **kwargs)
         return self.instance
 
-#deparecated
+
+# deparecated
 class deprecated(object):
     def __call__(self, func):
         self.func = func
         self.count = 0
         return self._wrapper
 
-    def _wrapper(self, *args, **kwargs):
+    def _wrapper(self, func, *args, **kwargs):
         self.count += 1
         if self.count == 1:
             print self.func.__name__, "is deprecated"
@@ -32,6 +33,7 @@ import linecache
 from pprint import pprint
 from functools import wraps
 import inspect
+
 
 @singleton
 class TraceObject(object):
@@ -86,7 +88,7 @@ class TraceObject(object):
                 continue
             a = getattr(cls, o)
             if hasattr(a, '__call__') and type(cls.__dict__[o]).__name__ == "python_selector":
-                if not ":" in a.__name__:
+                if ":" not in a.__name__:
                     func_name = "%s.%s" % (cls_name, o)
                     trace.add(func_name)
 
@@ -168,8 +170,10 @@ class TraceObject(object):
         return trace.traceIt
 
 
-#trace decorator
+# trace decorator
 import types
+
+
 def _trace():
     def decorator(func):
         if hasattr(func, '_trace_decorator') and func._trace_decorator:
@@ -183,6 +187,7 @@ def _trace():
         wrapper._trace_decorator = True
         return wrapper
     return decorator
+
 
 def Trace(*args, **kwargs):
     def cls_decorator(*cargs, **ckwargs):
@@ -242,4 +247,3 @@ class LoggerObject(object):
     def signal_handler(klass, signum, frame):
         sys.stdout.flush()
         sys.exit(0)
-

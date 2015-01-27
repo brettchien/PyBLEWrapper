@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 import atexit
 
+
 @Trace
 class OSXPeripheralApp(OSXCmd):
     def __init__(self, p):
@@ -105,7 +106,7 @@ class OSXPeripheralApp(OSXCmd):
                 print " ", c
                 print "    Description: ", c.description
                 print "    Value      : ", c.value
-            
+
         elif len(arglist) == 2:
             # read a char in profile
             pUUID = arglist[0]
@@ -131,6 +132,7 @@ class OSXPeripheralApp(OSXCmd):
         """
         print self.p
         print self.p.rssi
+
 
 @Trace
 class OSXCentralManagerApp(OSXCmd):
@@ -228,7 +230,7 @@ class OSXCentralManagerApp(OSXCmd):
         return True
 
     def do_scan(self, args):
-        """Scan available peripherals 
+        """Scan available peripherals
         """
         seconds = 3
         num = 1
@@ -294,12 +296,12 @@ class OSXCentralManagerApp(OSXCmd):
             pid = int(args.strip())
         except:
             pass
-        if pid == None and len(self.connectedPeripherals):
-             p = self.connectedPeripherals[0]
-             OSXPeripheralApp(p).cmdloop()
-        if pid != None and pid < len(self.connectedPeripherals):
-             p = self.connectedPeripherals[pid]
-             OSXPeripheralApp(p).cmdloop()
+        if pid is None and len(self.connectedPeripherals):
+            p = self.connectedPeripherals[0]
+            OSXPeripheralApp(p).cmdloop()
+        if pid is not None and pid < len(self.connectedPeripherals):
+            p = self.connectedPeripherals[pid]
+            OSXPeripheralApp(p).cmdloop()
 
     def do_connect(self, args):
         """Connect to a specific peripheral
@@ -309,9 +311,9 @@ class OSXCentralManagerApp(OSXCmd):
             pid = int(args.strip())
         except:
             pass
-        if pid == None and len(self.availablePeripherals):
+        if pid is None and len(self.availablePeripherals):
             self.centralManager.connectPeripheral(self.availablePeripherals[0])
-        if pid != None and pid < len(self.availablePeripherals):
+        if pid is not None and pid < len(self.availablePeripherals):
             self.centralManager.connectPeripheral(self.availablePeripherals[pid])
 
     def do_disconnect(self, args):
@@ -322,9 +324,9 @@ class OSXCentralManagerApp(OSXCmd):
             pid = int(args.strip())
         except:
             pass
-        if pid == None and len(self.connectedPeripherals):
+        if pid is None and len(self.connectedPeripherals):
             self.centralManager.disconnectPeripheral(self.connectedPeripherals[0])
-        if pid != None and pid < len(self.connectedPeripherals):
+        if pid is not None and pid < len(self.connectedPeripherals):
             self.centralManager.disconnectPeripheral(self.connectedPeripherals[pid])
 
     def do_connectAll(self, args):
@@ -342,8 +344,8 @@ class OSXCentralManagerApp(OSXCmd):
                 self.centralManager.disconnectPeripheral(p)
 
     def do_test(self, args):
-#        self.centralManager.retrieveConnectedPeripherals()
-#        self.centralManager.retrieveConnectedPeripheralsWithServices(["FFF0"])
+        #        self.centralManager.retrieveConnectedPeripherals()
+        #        self.centralManager.retrieveConnectedPeripheralsWithServices(["FFF0"])
         pass
 
     def halt(self):
@@ -357,4 +359,3 @@ if __name__ == "__main__":
         import traceback
         print traceback.print_exc()
         print e
-

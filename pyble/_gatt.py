@@ -7,6 +7,7 @@ from handlers import ProfileHandler
 
 logger = logging.getLogger(__name__)
 
+
 class Service(LoggerObject):
     def __init__(self):
         try:
@@ -29,7 +30,7 @@ class Service(LoggerObject):
         if not self._handler:
             self._handler = ProfileHandler[self.UUID]
         return self._handler
- 
+
     @property
     def characteristicUUIDs(self):
         if len(self._characteristicUUIDs) == 0:
@@ -85,8 +86,10 @@ class Service(LoggerObject):
     def __str__(self):
         return self.__repr__()
 
+
 class Profile(Service):
     pass
+
 
 class Characteristic(LoggerObject):
     def __init__(self, service=None, profile=None):
@@ -114,7 +117,7 @@ class Characteristic(LoggerObject):
         if not self._handler and self.service:
             self._handler = ProfileHandler[self.service.UUID]
         return self._handler
- 
+
     @property
     def value(self):
         return self._value
@@ -130,7 +133,7 @@ class Characteristic(LoggerObject):
     def removeDescriptor(self, descriptor):
         if descriptor in self.descriptors:
             self.descriptors.remove(descriptor)
-    
+
     def __repr__(self):
         identifier = ""
         if isinstance(self.UUID, type("")):
@@ -144,6 +147,7 @@ class Characteristic(LoggerObject):
 
     def __str__(self):
         return self.__repr__()
+
 
 class Descriptor(LoggerObject):
     def __init__(self):
@@ -163,13 +167,13 @@ class Descriptor(LoggerObject):
             identifier = str(self.UUID).upper()
         return "Descriptor{%s <%s>}" % (self.name, identifier)
 
+
 def load_profiles():
     # load default profiles
     package = profile
     for importer, name, isPkg in pkgutil.walk_packages(
-        path = package.__path__,
-        prefix = package.__name__+".",
-        onerror = lambda x: None):
+            path=package.__path__,
+            prefix=package.__name__ + ".",
+            onerror=lambda x: None):
         print(name)
     # load cutomized profiles
-

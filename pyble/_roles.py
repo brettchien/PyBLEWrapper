@@ -1,6 +1,6 @@
 #import logging
 from patterns import LoggerObject
-#from handlers import PeripheralHandler
+from handlers import ProfileHandler
 
 
 class Peripheral(LoggerObject):
@@ -80,6 +80,17 @@ class Peripheral(LoggerObject):
         return iter(self.services)
 
     def __getitem__(self, key):
+        if self.delegate:
+            found = False
+            for pHandler in self.delegate.profile_handlers.values():
+                if pHandler.names:
+                    for uuid, name in pHandler.names.iteritems():
+                        if name == key:
+                            key = uuid
+                            found = True
+                            break
+                    if found:
+                        break
         key = key.upper()
         if key in self.serviceUUIDs:
             for service in self.services:

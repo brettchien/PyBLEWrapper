@@ -54,6 +54,11 @@ class Service(LoggerObject):
             self.characteristics.remove(characteristic)
 
     def __getitem__(self, key):
+        if self.handler and self.handler.names:
+            for uuid, name in self.handler.names.iteritems():
+                if name == key:
+                    key = uuid
+                    break
         if key.upper() in self.characteristicUUIDs:
             for characteristic in self.characteristics:
                 if characteristic.UUID == key.upper():

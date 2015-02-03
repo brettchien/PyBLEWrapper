@@ -10,7 +10,7 @@ import struct
 
 class MyDefault(ProfileHandler):
     UUID = "3D9FFEC0-50BB-3960-8782-C593EDBC35EA"
-    _AUTOLOAD = True
+    _AUTOLOAD = False
     names = {
         "3D9FFEC0-50BB-3960-8782-C593EDBC35EA": "EcoZen Profile",
         "3D9FFEC1-50BB-3960-8782-C593EDBC35EA": "EcoZen Char 1",
@@ -103,7 +103,7 @@ def main():
                 break
         except Exception as e:
             print e
-#    target.delegate = MyPeripheral
+    target.delegate = MyPeripheral
     p = cm.connectPeripheral(target)
     for service in p:
         #        if service.UUID == "FFF0":
@@ -118,6 +118,8 @@ def main():
 #            print "description: ", c.description
 #            print "value      : ", c.value
 
+    c = p["EcoZen Profile"]["EcoZen Char 1"]
+    print c.value
 #    c = p["FFA0"]["FFA1"]
 #    p["FFA0"]["FFA6"].notify = True
 #    c.value = bytearray(chr(1))

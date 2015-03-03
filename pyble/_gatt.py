@@ -112,6 +112,7 @@ class Characteristic(LoggerObject):
         self.isBroadcasted = False
         self._value = None
         self._handler = None
+        self._valueUpdated = False
 
     @property
     def handler(self):
@@ -125,11 +126,13 @@ class Characteristic(LoggerObject):
 
     @property
     def value(self):
+        self._valueUpdated = False
         return self._value
 
     @value.setter
     def value(self, data):
         self._value = data
+        self._valueUpdated = True
 
     def addDescriptor(self, descriptor):
         if descriptor not in self.descriptors:

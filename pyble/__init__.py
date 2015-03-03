@@ -18,7 +18,7 @@ from . import profile
 
 default_profilepath = os.path.abspath(os.path.dirname(inspect.getfile(profile)))
 ProfileHandler.register_path(default_profilepath)
-ProfileHandler.find_handlers()
+#ProfileHandler.find_handlers()
 
 
 # loading customized class base on operating system

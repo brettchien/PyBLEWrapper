@@ -5,7 +5,7 @@ Currently this wrapper only supports OSX.
 
 ## Installation
 
-pip install -U git+http://git.epl.tw/brettchien/pyble.git
+pip install -U git+https://github.com/brettchien/PyBLEWrapper.git
 
 ## Usage
 

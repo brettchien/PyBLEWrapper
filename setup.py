@@ -13,13 +13,17 @@ else:
     # windows
     pass
 
+versionStr = "0.2.5"
+
 setup(name="PyBLE",
-      version="0.2.2",
+      version=versionStr,
 #      description="Python Bluetooth Smart(BLE) manager wrapper for OSX, Linux and Windows 8",
       description="Python Bluetooth Smart(BLE) manager wrapper for OSX",
       author="Brett Chien",
       author_email="brett.chien@gmail.com",
-      url="",
+      url="https://github.com/brettchien/PyBLEWrapper",
+      download_url='https://github.com/brettchien/PyBLEWrapper/tarball/' + versionStr,
       packages=find_packages(exclude="tests"),
       install_requires=requirements,
+      keywords = ['Blueooth', 'BLE', 'Bluetooth Low Energy', 'osx']
       )

@@ -15,7 +15,7 @@ else:
 
 versionStr = "0.2.5"
 
-setup(name="PyBLE",
+setup(name="PyBLEWrapper",
       version=versionStr,
 #      description="Python Bluetooth Smart(BLE) manager wrapper for OSX, Linux and Windows 8",
       description="Python Bluetooth Smart(BLE) manager wrapper for OSX",

@@ -21,6 +21,7 @@ setup(name="PyBLEWrapper",
       description="Python Bluetooth Smart(BLE) manager wrapper for OSX",
       author="Brett Chien",
       author_email="brett.chien@gmail.com",
+      license="MIT"
       url="https://github.com/brettchien/PyBLEWrapper",
       download_url='https://github.com/brettchien/PyBLEWrapper/tarball/' + versionStr,
       packages=find_packages(exclude="tests"),

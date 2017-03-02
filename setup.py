@@ -13,7 +13,7 @@ else:
     # windows
     pass
 
-versionStr = "0.2.6"
+versionStr = "0.3.0"
 
 setup(
         name="PyBLEWrapper",

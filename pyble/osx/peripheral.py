@@ -163,6 +163,7 @@ class OSXPeripheral(NSObject, Peripheral):
     def setNotifyForCharacteristic(self, flag, characteristic):
         self.instance.setNotifyValue_forCharacteristic_(flag, characteristic)
 
+    @python_method
     def findServiceByServiceInstance(self, instance):
         uuidBytes = instance._.UUID._.data
         for s in self.services:
@@ -170,6 +171,7 @@ class OSXPeripheral(NSObject, Peripheral):
                 return s
         return None
 
+    @python_method
     def findServiceByCharacteristicInstance(self, instance):
         uuidBytes = instance._.service._.UUID._.data
         for s in self.services:
@@ -177,6 +179,7 @@ class OSXPeripheral(NSObject, Peripheral):
                 return s
         return None
 
+    @python_method
     def findServiceByDescriptorInstance(self, instance):
         uuidBytes = instance._.characteristic._.service._.UUID._.data
         for s in self.services:
@@ -184,6 +187,7 @@ class OSXPeripheral(NSObject, Peripheral):
                 return s
         return None
 
+    @python_method
     def findCharacteristicByDescriptorInstance(self, instance):
         service = self.findServiceByDescriptorInstance(instance)
         uuidBytes = instance._.characteristic._.UUID._.data

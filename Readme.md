@@ -9,7 +9,31 @@ pip install -U git+https://github.com/brettchien/PyBLEWrapper.git
 
 ## Usage
 
-example usage is in example.py
+- example usage is in example.py
+
+- A interactive console is also provided
+
+```
+    $ git clone https://github.com/brettchein/PyBLEWrapper.git
+    $ cd PyBLEWrapper
+    $ python setup install
+    $ cd pyble
+    $ python backend.py
+    INFO:osx.centralManager.OSXCentralManager:Initialize CBCentralManager
+    INFO:osx.centralManager.OSXCentralManager:BLE is ready!!
+    EcoBLE(20-c9-d0-97-57-a0) $ help
+
+    Documented commands (type help <topic>):
+    ========================================
+    connect     debug       disconnectAll  execute  help  list  shell
+    connectAll  disconnect  eval           exit     hist  scan  stop 
+
+    Undocumented commands:
+    ======================
+    EOF  test
+
+    EcoBLE(20-c9-d0-97-57-a0) $ 
+```
 
 ## License
 
